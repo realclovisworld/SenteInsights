@@ -46,6 +46,17 @@ const Navbar = () => {
           </div>
 
           <div className="flex items-center gap-3">
+            <Link
+              to="/login"
+              className="hidden sm:block text-sm font-medium text-muted hover:text-foreground transition-colors"
+            >
+              Log in
+            </Link>
+            <Link to="/register" className="hidden sm:block">
+              <Button variant="outline" className="rounded-[10px] font-heading font-semibold text-sm">
+                Register
+              </Button>
+            </Link>
             <Link to="/dashboard" className="hidden sm:block">
               <Button className="rounded-[10px] font-heading font-semibold text-sm">
                 Analyse My Statement
