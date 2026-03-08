@@ -25,17 +25,10 @@ const FIELDS: SettingField[] = [
   { key: "maintenance_mode", label: "Maintenance Mode", type: "toggle", group: "System" },
 ];
 
-interface AdminSettingsProps {
-  adminPassword: string;
-}
-
-const AdminSettings = ({ adminPassword }: AdminSettingsProps) => {
+const AdminSettings = () => {
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [currentPw, setCurrentPw] = useState("");
-  const [newPw, setNewPw] = useState("");
-  const [confirmPw, setConfirmPw] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -54,25 +47,6 @@ const AdminSettings = ({ adminPassword }: AdminSettingsProps) => {
     }
     toast.success("Settings saved");
     setSaving(false);
-  };
-
-  const handlePasswordChange = () => {
-    if (currentPw !== adminPassword) {
-      toast.error("Current password is incorrect");
-      return;
-    }
-    if (newPw.length < 6) {
-      toast.error("New password must be at least 6 characters");
-      return;
-    }
-    if (newPw !== confirmPw) {
-      toast.error("Passwords don't match");
-      return;
-    }
-    toast.info("Admin password is set via VITE_ADMIN_PASSWORD environment variable. Update it in your project settings.");
-    setCurrentPw("");
-    setNewPw("");
-    setConfirmPw("");
   };
 
   const groups = [...new Set(FIELDS.map((f) => f.group))];
@@ -113,17 +87,6 @@ const AdminSettings = ({ adminPassword }: AdminSettingsProps) => {
         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
         Save Settings
       </Button>
-
-      {/* Change Password */}
-      <div className="bg-card border border-border rounded-xl p-5">
-        <h3 className="font-heading font-semibold text-foreground mb-4">Change Admin Password</h3>
-        <div className="space-y-3 max-w-sm">
-          <Input type="password" placeholder="Current password" value={currentPw} onChange={(e) => setCurrentPw(e.target.value)} />
-          <Input type="password" placeholder="New password" value={newPw} onChange={(e) => setNewPw(e.target.value)} />
-          <Input type="password" placeholder="Confirm new password" value={confirmPw} onChange={(e) => setConfirmPw(e.target.value)} />
-          <Button variant="outline" onClick={handlePasswordChange}>Update Password</Button>
-        </div>
-      </div>
     </div>
   );
 };

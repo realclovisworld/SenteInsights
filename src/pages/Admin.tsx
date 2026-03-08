@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
+import { useUser, useAuth } from "@clerk/react";
+import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import AdminSidebar, { type AdminPage } from "@/components/admin/AdminSidebar";
@@ -20,22 +22,22 @@ const PAGE_TITLES: Record<AdminPage, string> = {
   settings: "Settings",
 };
 
+/** Check if the current Clerk user has admin role via publicMetadata */
+function useIsAdmin() {
+  const { user, isLoaded: userLoaded } = useUser();
+  const { isSignedIn, isLoaded: authLoaded } = useAuth();
+
+  const isLoaded = userLoaded && authLoaded;
+  const isAdmin = isSignedIn && user?.publicMetadata?.role === "admin";
+
+  return { isLoaded, isSignedIn, isAdmin };
+}
+
 const Admin = () => {
-  const [authed, setAuthed] = useState(false);
-  const [password, setPassword] = useState("");
+  const { isLoaded, isSignedIn, isAdmin } = useIsAdmin();
   const [page, setPage] = useState<AdminPage>("overview");
   const [pendingPayments, setPendingPayments] = useState<AdminPaymentRequest[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
-
-  const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD || "admin123";
-
-  const handleLogin = () => {
-    if (password === adminPassword) {
-      setAuthed(true);
-    } else {
-      toast.error("Wrong password");
-    }
-  };
 
   const loadPending = useCallback(async () => {
     const all = await fetchAllPaymentRequests();
@@ -43,12 +45,12 @@ const Admin = () => {
   }, []);
 
   useEffect(() => {
-    if (authed) {
+    if (isAdmin) {
       loadPending();
       const interval = setInterval(loadPending, 30000);
       return () => clearInterval(interval);
     }
-  }, [authed, loadPending]);
+  }, [isAdmin, loadPending]);
 
   const handleHeaderActivate = async (req: AdminPaymentRequest) => {
     await activatePayment(req);
@@ -64,25 +66,29 @@ const Admin = () => {
     setRefreshKey((k) => k + 1);
   };
 
-  if (!authed) {
+  // Loading state
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  // Not signed in → redirect to login
+  if (!isSignedIn) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Signed in but not admin
+  if (!isAdmin) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="bg-card border border-border rounded-2xl p-8 w-full max-w-sm space-y-4 shadow-lg">
-          <h1 className="font-heading font-bold text-xl text-foreground text-center">Admin Access</h1>
-          <input
-            type="password"
-            placeholder="Enter admin password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          />
-          <button
-            onClick={handleLogin}
-            className="w-full py-2.5 rounded-[10px] text-sm font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
-          >
-            Enter
-          </button>
+        <div className="bg-card border border-border rounded-2xl p-8 w-full max-w-sm space-y-4 shadow-lg text-center">
+          <h1 className="font-heading font-bold text-xl text-foreground">Access Denied</h1>
+          <p className="text-sm text-muted-foreground">
+            You don't have admin privileges. Contact the administrator to request access.
+          </p>
         </div>
       </div>
     );
@@ -94,7 +100,7 @@ const Admin = () => {
         activePage={page}
         onNavigate={setPage}
         pendingCount={pendingPayments.length}
-        onLogout={() => setAuthed(false)}
+        onLogout={() => window.location.href = "/"}
       />
       <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
         <AdminHeader
@@ -110,7 +116,7 @@ const Admin = () => {
           {page === "users" && <AdminUsers />}
           {page === "statements" && <AdminStatements />}
           {page === "banned" && <AdminBanned />}
-          {page === "settings" && <AdminSettings adminPassword={adminPassword} />}
+          {page === "settings" && <AdminSettings />}
         </main>
       </div>
     </div>
