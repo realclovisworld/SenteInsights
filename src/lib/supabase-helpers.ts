@@ -1,18 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { ParsedStatement, ParsedTransaction } from "@/lib/pdfParser";
 
-// Default user ID until auth is implemented
-const DEFAULT_USER_ID = "anonymous";
-
-function getUserId(): string {
-  return DEFAULT_USER_ID;
-}
-
 // ============ PROFILE HELPERS ============
 
-export async function getOrCreateProfile() {
-  const userId = getUserId();
-  
+export async function getOrCreateProfile(userId: string) {
   const { data: existing } = await supabase
     .from("profiles")
     .select("*")
@@ -20,18 +11,15 @@ export async function getOrCreateProfile() {
     .single();
 
   if (existing) {
-    // Check if page counters need resetting
     const today = new Date().toISOString().split("T")[0];
     const lastReset = existing.last_reset_date;
     const updates: Record<string, unknown> = {};
 
-    // Reset daily counter
     if (lastReset !== today) {
       updates.pages_used_today = 0;
       updates.last_reset_date = today;
     }
 
-    // Reset monthly counter on the 1st
     const now = new Date();
     if (lastReset) {
       const lastResetDate = new Date(lastReset);
@@ -53,7 +41,6 @@ export async function getOrCreateProfile() {
     return existing;
   }
 
-  // Create new profile
   const { data: newProfile } = await supabase
     .from("profiles")
     .insert({ user_id: userId })
@@ -63,8 +50,8 @@ export async function getOrCreateProfile() {
   return newProfile;
 }
 
-export async function checkPageLimit(numPages: number): Promise<{ allowed: boolean; used: number; limit: number }> {
-  const profile = await getOrCreateProfile();
+export async function checkPageLimit(userId: string, numPages: number): Promise<{ allowed: boolean; used: number; limit: number }> {
+  const profile = await getOrCreateProfile(userId);
   if (!profile) return { allowed: true, used: 0, limit: 5 };
 
   const used = profile.pages_used_month || 0;
@@ -72,9 +59,8 @@ export async function checkPageLimit(numPages: number): Promise<{ allowed: boole
   return { allowed: used + numPages <= limit, used, limit };
 }
 
-export async function incrementPageCount(numPages: number) {
-  const userId = getUserId();
-  const profile = await getOrCreateProfile();
+export async function incrementPageCount(userId: string, numPages: number) {
+  const profile = await getOrCreateProfile(userId);
   if (!profile) return;
 
   await supabase
@@ -91,7 +77,6 @@ export async function incrementPageCount(numPages: number) {
 
 function parseDateForDB(dateStr: string): string | null {
   if (!dateStr) return null;
-  // Input: DD-MM-YYYY → Output: YYYY-MM-DD
   const parts = dateStr.split("-");
   if (parts.length === 3 && parts[2].length === 4) {
     return `${parts[2]}-${parts[1]}-${parts[0]}`;
@@ -100,12 +85,11 @@ function parseDateForDB(dateStr: string): string | null {
 }
 
 export async function saveStatementToSupabase(
+  userId: string,
   parsed: ParsedStatement,
   numPages: number,
   insightTexts: string[]
 ): Promise<string | null> {
-  const userId = getUserId();
-
   // 1. Save statement summary
   const { data: stmt, error: stmtErr } = await supabase
     .from("statements")
@@ -168,7 +152,7 @@ export async function saveStatementToSupabase(
   }
 
   // 4. Increment page count
-  await incrementPageCount(numPages);
+  await incrementPageCount(userId, numPages);
 
   return statementId;
 }
@@ -188,8 +172,7 @@ export interface StatementSummary {
   uploaded_at: string | null;
 }
 
-export async function fetchRecentStatements(limit = 5): Promise<StatementSummary[]> {
-  const userId = getUserId();
+export async function fetchRecentStatements(userId: string, limit = 5): Promise<StatementSummary[]> {
   const { data, error } = await supabase
     .from("statements")
     .select("id, provider, account_name, date_from, date_to, total_transactions, net_balance, total_in, total_out, uploaded_at")
@@ -231,7 +214,6 @@ export async function fetchStatementTransactions(statementId: string): Promise<P
   }
 
   return (data || []).map((t: StoredTransaction) => {
-    // Convert DB date YYYY-MM-DD back to DD-MM-YYYY for display
     let displayDate = t.date || "";
     if (displayDate.includes("-") && displayDate.split("-")[0].length === 4) {
       const p = displayDate.split("-");
@@ -282,7 +264,6 @@ export async function fetchFullStatement(statementId: string): Promise<ParsedSta
   const incomingCount = transactions.filter(t => t.type === "received").length;
   const outgoingCount = transactions.filter(t => t.type === "sent").length;
 
-  // Convert dates back for display
   const dateFrom = stmt.date_from ? (() => { const p = stmt.date_from.split("-"); return p[0].length === 4 ? `${p[2]}-${p[1]}-${p[0]}` : stmt.date_from; })() : "";
   const dateTo = stmt.date_to ? (() => { const p = stmt.date_to.split("-"); return p[0].length === 4 ? `${p[2]}-${p[1]}-${p[0]}` : stmt.date_to; })() : "";
 

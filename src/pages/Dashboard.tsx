@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
+import { useAuth, useUser } from "@clerk/react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import FileUpload from "@/components/FileUpload";
@@ -12,13 +13,12 @@ import IncomeSourcesChart from "@/components/IncomeSourcesChart";
 import AccountInfoCard from "@/components/AccountInfoCard";
 import StatementHistory from "@/components/StatementHistory";
 import { parsePDF, type ParsedStatement } from "@/lib/pdfParser";
-import { saveStatementToSupabase, checkPageLimit, fetchFullStatement } from "@/lib/supabase-helpers";
+import { saveStatementToSupabase, getOrCreateProfile, fetchFullStatement } from "@/lib/supabase-helpers";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
 
-// Generate insight texts from transactions (mirrors AIInsights component logic)
 function generateInsightTexts(transactions: ParsedStatement["transactions"]): string[] {
   if (!transactions || transactions.length === 0) return [];
   const result: string[] = [];
@@ -69,10 +69,32 @@ function generateInsightTexts(transactions: ParsedStatement["transactions"]): st
 }
 
 const Dashboard = () => {
+  const { userId, isSignedIn } = useAuth();
+  const { user } = useUser();
   const [data, setData] = useState<ParsedStatement | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState("");
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
+
+  // Resolve user ID: Clerk userId for signed-in users, "anonymous" otherwise
+  const effectiveUserId = userId || "anonymous";
+
+  // Ensure profile exists when user signs in
+  const ensureProfile = useCallback(async () => {
+    if (!isSignedIn || !userId) return;
+    try {
+      await getOrCreateProfile(userId);
+    } catch (err) {
+      console.error("Error ensuring profile:", err);
+    }
+  }, [isSignedIn, userId]);
+
+  // Create profile on first render when signed in
+  useState(() => {
+    if (isSignedIn && userId) {
+      ensureProfile();
+    }
+  });
 
   const handleUpload = async (file: File) => {
     setLoading(true);
@@ -99,13 +121,11 @@ const Dashboard = () => {
       setLoadingStep("Saving to your account…");
       try {
         const insightTexts = generateInsightTexts(result.transactions);
-        // Estimate pages from the PDF (use 1 as minimum since we parsed it client-side)
-        const numPages = 1; // pdfjs already extracted pages, we count as 1 upload
-        await saveStatementToSupabase(result, numPages, insightTexts);
+        const numPages = 1;
+        await saveStatementToSupabase(effectiveUserId, result, numPages, insightTexts);
         setHistoryRefreshKey((k) => k + 1);
       } catch (saveErr) {
         console.error("Error saving to Supabase:", saveErr);
-        // Non-blocking — data is still shown
       }
 
       setData(result);
@@ -173,12 +193,14 @@ const Dashboard = () => {
               Upload Your Statement
             </h1>
             <p className="text-muted mb-8">
-              Drop your PDF statement below to get instant insights into your spending.
+              {isSignedIn
+                ? `Welcome${user?.firstName ? `, ${user.firstName}` : ""}! Drop your PDF statement below to get instant insights.`
+                : "Drop your PDF statement below to get instant insights into your spending."}
             </p>
             <FileUpload onFileSelect={handleUpload} />
           </div>
           <div className="max-w-2xl mx-auto mt-12">
-            <StatementHistory onViewStatement={handleViewStatement} refreshKey={historyRefreshKey} />
+            <StatementHistory onViewStatement={handleViewStatement} refreshKey={historyRefreshKey} userId={effectiveUserId} />
           </div>
         </div>
         <Footer />
@@ -190,7 +212,6 @@ const Dashboard = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container mx-auto px-4 py-8 space-y-6">
-        {/* Validation error banner */}
         {data.validationError && (
           <Alert variant="destructive" className="border-destructive bg-destructive/10">
             <AlertTriangle className="h-4 w-4" />
@@ -234,7 +255,7 @@ const Dashboard = () => {
 
         <TransactionTable transactions={data.transactions} />
 
-        <StatementHistory onViewStatement={handleViewStatement} refreshKey={historyRefreshKey} />
+        <StatementHistory onViewStatement={handleViewStatement} refreshKey={historyRefreshKey} userId={effectiveUserId} />
       </div>
       <Footer />
     </div>
