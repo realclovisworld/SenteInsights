@@ -4,6 +4,8 @@ import { Check, Star, Shield, ArrowRight, Building2, ChevronDown } from "lucide-
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import PaymentModal from "@/components/PaymentModal";
+import HowToPay from "@/components/HowToPay";
 
 const tiers = [
   {
