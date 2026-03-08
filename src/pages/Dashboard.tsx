@@ -3,6 +3,7 @@ import { useAuth, useUser } from "@clerk/react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import FileUpload from "@/components/FileUpload";
+import BatchFileUpload, { type BatchFileItem } from "@/components/BatchFileUpload";
 import StatCards from "@/components/StatCards";
 import SpendingChart from "@/components/SpendingChart";
 import MonthlyTrend from "@/components/MonthlyTrend";
@@ -81,6 +82,7 @@ const Dashboard = () => {
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState("");
+  const [batchItems, setBatchItems] = useState<BatchFileItem[]>([]);
 
   // Profile state for plan & usage
   const [userPlan, setUserPlan] = useState<PlanId>("anonymous");
@@ -208,6 +210,84 @@ const Dashboard = () => {
     }
   };
 
+  const handleBatchUpload = useCallback(async (files: File[]) => {
+    const totalPages = files.length;
+    if (!checkUploadAllowed(totalPages)) return;
+
+    const newItems: BatchFileItem[] = files.map((file, i) => ({
+      id: `batch-${Date.now()}-${i}`,
+      file,
+      status: "queued" as const,
+      progress: 0,
+    }));
+    setBatchItems(newItems);
+
+    for (let i = 0; i < newItems.length; i++) {
+      const item = newItems[i];
+      setBatchItems((prev) =>
+        prev.map((it) => (it.id === item.id ? { ...it, status: "parsing", progress: 30 } : it))
+      );
+
+      try {
+        const result = await parsePDF(item.file);
+        setBatchItems((prev) =>
+          prev.map((it) => (it.id === item.id ? { ...it, progress: 70 } : it))
+        );
+
+        if (result.transactions.length === 0) {
+          setBatchItems((prev) =>
+            prev.map((it) =>
+              it.id === item.id ? { ...it, status: "error", error: "No transactions found" } : it
+            )
+          );
+          continue;
+        }
+
+        // Save to Supabase
+        if (isSignedIn && userId) {
+          const insightTexts = generateInsightTexts(result.transactions);
+          await saveStatementToSupabase(effectiveUserId, result, 1, insightTexts);
+          setHistoryRefreshKey((k) => k + 1);
+          setPagesUsedToday((p) => p + 1);
+          setPagesUsedMonth((p) => p + 1);
+        }
+
+        if (userPlan === "anonymous") {
+          incrementAnonUsage(1);
+        }
+
+        setBatchItems((prev) =>
+          prev.map((it) =>
+            it.id === item.id
+              ? { ...it, status: "done", progress: 100, transactionCount: result.transactions.length }
+              : it
+          )
+        );
+
+        // Set the last successful result as current data
+        if (i === newItems.length - 1 || newItems.length === 1) {
+          setData(result);
+        }
+      } catch (err) {
+        console.error(`Batch parse error for ${item.file.name}:`, err);
+        setBatchItems((prev) =>
+          prev.map((it) =>
+            it.id === item.id ? { ...it, status: "error", error: "Failed to parse" } : it
+          )
+        );
+      }
+    }
+
+    const doneCount = newItems.length;
+    if (doneCount > 1) {
+      toast.success(`Processed ${doneCount} statements`);
+    }
+  }, [checkUploadAllowed, isSignedIn, userId, effectiveUserId, userPlan]);
+
+  const handleRemoveBatchItem = useCallback((id: string) => {
+    setBatchItems((prev) => prev.filter((it) => it.id !== id));
+  }, []);
+
   const handleViewStatement = useCallback(async (statementId: string) => {
     setLoading(true);
     setLoadingStep("Loading saved statement…");
@@ -269,6 +349,16 @@ const Dashboard = () => {
                 : "Drop your PDF statement below to get instant insights into your spending."}
             </p>
             <FileUpload onFileSelect={handleUpload} />
+            <div className="mt-6">
+              <FeatureGate plan={userPlan} feature="batchUpload" mode="blur" lockMessage="Batch upload available on Pro plan and above">
+                <BatchFileUpload
+                  onFilesSelect={handleBatchUpload}
+                  items={batchItems}
+                  onRemove={handleRemoveBatchItem}
+                  maxFiles={10}
+                />
+              </FeatureGate>
+            </div>
           </div>
           <div className="max-w-2xl mx-auto mt-8 space-y-6">
             <UsageBar plan={userPlan} pagesUsedToday={pagesUsedToday} pagesUsedMonth={pagesUsedMonth} />
