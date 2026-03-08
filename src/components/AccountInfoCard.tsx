@@ -14,8 +14,6 @@ interface AccountInfoCardProps {
 const providerColors: Record<string, string> = {
   "MTN MoMo": "bg-[hsl(48,96%,53%)] text-[hsl(220,39%,11%)]",
   "Airtel Money": "bg-[hsl(4,73%,59%)] text-[hsl(0,0%,100%)]",
-  "Equity Bank": "bg-[hsl(150,65%,29%)] text-[hsl(0,0%,100%)]",
-  "Stanbic Bank": "bg-[hsl(217,91%,60%)] text-[hsl(0,0%,100%)]",
 };
 
 const AccountInfoCard = ({
