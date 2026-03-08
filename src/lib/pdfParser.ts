@@ -89,7 +89,7 @@ function detectProvider(text: string): string {
 
 function detectAccountHolder(text: string): string {
   const patterns = [
-    /(?:Customer\s*Name|Account\s*Name|Subscriber\s*Name|Name)\s*[:\-]?\s*([A-Z][A-Za-z\s]{2,30}?)(?:\s*(?:Mobile|Phone|Email|Account|$|\d))/im,
+    /(?:Account\s*holder|Customer\s*Name|Account\s*Name|Subscriber\s*Name|Name)\s*[:\-]?\s*([A-Z][A-Za-z\s]{2,30}?)(?:\s*(?:Mobile|Phone|Wallet|Email|Account|$|\d))/im,
     /(?:Statement\s+for|Subscriber)\s*[:\-]?\s*([A-Z][A-Z\s]{3,})/i,
   ];
   for (const p of patterns) {
