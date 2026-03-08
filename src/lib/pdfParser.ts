@@ -177,10 +177,11 @@ export async function parsePDF(file: File): Promise<ParsedStatement> {
   }
 
   const provider = detectProvider(fullText);
-  const accountHolder = detectAccountHolder(fullText);
+  let accountHolder = detectAccountHolder(fullText);
   const phoneNumber = detectPhoneNumber(fullText);
   const emailAddress = detectEmail(fullText);
   const statementPeriod = detectStatementPeriod(fullText);
+  const statementDate = detectStatementDate(fullText);
 
   let transactions: ParsedTransaction[] = [];
 
