@@ -3,13 +3,15 @@ import * as pdfjsLib from "pdfjs-dist";
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
 
 export interface ParsedTransaction {
-  date: string;
-  time: string;
+  date: string; // YYYY-MM-DD
+  time: string; // HH:MM or ""
   transactionType: string;
   description: string;
   transactionId: string;
   from: string;
   to: string;
+  accountName: string;
+  reference: string;
   amount: number;
   fees: number;
   taxes: number;
@@ -36,6 +38,63 @@ export interface ParsedStatement {
   validationError?: string;
 }
 
+// ============ DATE UTILITIES ============
+
+const MONTH_MAP: Record<string, string> = {
+  jan: "01", feb: "02", mar: "03", apr: "04", may: "05", jun: "06",
+  jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12",
+  Jan: "01", Feb: "02", Mar: "03", Apr: "04", May: "05", Jun: "06",
+  Jul: "07", Aug: "08", Sep: "09", Oct: "10", Nov: "11", Dec: "12",
+};
+
+const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTHS_PATTERN = "Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec";
+
+/**
+ * Parse any date string to YYYY-MM-DD
+ */
+export function parseDateToISO(dateStr: string): string {
+  if (!dateStr) return "";
+  const s = dateStr.trim();
+
+  // YYYY-MM-DD
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) return s;
+
+  // DD-MM-YYYY or DD/MM/YYYY
+  const dmy = s.match(/^(\d{2})[\/-](\d{2})[\/-](\d{4})$/);
+  if (dmy) return `${dmy[3]}-${dmy[2]}-${dmy[1]}`;
+
+  // DD-MM-YY
+  const dmy2 = s.match(/^(\d{2})[\/-](\d{2})[\/-](\d{2})$/);
+  if (dmy2) return `20${dmy2[3]}-${dmy2[2]}-${dmy2[1]}`;
+
+  // D MMM YYYY or DD MMM YYYY
+  const named = s.match(/^(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{4})$/i);
+  if (named) {
+    const day = named[1].padStart(2, "0");
+    const month = MONTH_MAP[named[2].charAt(0).toUpperCase() + named[2].slice(1).toLowerCase()] || "01";
+    return `${named[3]}-${month}-${day}`;
+  }
+
+  return s;
+}
+
+/**
+ * Format YYYY-MM-DD as "DD MMM YYYY" for display
+ */
+export function formatDateDisplay(isoDate: string): string {
+  if (!isoDate) return "";
+  const parts = isoDate.split("-");
+  if (parts.length !== 3) return isoDate;
+  const [y, m, d] = parts;
+  const monthIdx = parseInt(m, 10) - 1;
+  if (monthIdx < 0 || monthIdx > 11) return isoDate;
+  return `${parseInt(d, 10)} ${MONTH_ABBR[monthIdx]} ${y}`;
+}
+
+// ============ HELPERS ============
+
 function parseUGXAmount(str: string): number {
   if (!str) return 0;
   const cleaned = str.replace(/[^0-9.]/g, "");
@@ -46,7 +105,7 @@ function categorize(description: string, transactionType: string, direction: "se
   const text = (description + " " + transactionType).toUpperCase();
   if (text.includes("AIRTEL") || text.includes("MTN UGANDA LIMITED") || text.includes("AIRTIME") || text.includes("DATA BUNDLE") || text.includes("BUNDLE") || text.includes("PREPAID MC PREPAID")) return "Airtime/Data";
   if (text.includes("UMEME") || text.includes("ELECTRICITY") || text.includes("NWSC") || text.includes("WATER") || text.includes("YAKA")) return "Utilities";
-  if (text.includes("ABSA") || text.includes("STANBIC") || text.includes("EQUITY") || text.includes("KCB") || text.includes("POST BANK")) return "Bank Payment";
+  if (text.includes("ABSA") || text.includes("STANBIC") || text.includes("EQUITY") || text.includes("KCB") || text.includes("POST BANK") || text.includes("BANK")) return "Bank Payment";
   if (text.includes("JUMIA") || text.includes("FOOD") || text.includes("RESTAURANT") || text.includes("ROLEX") || text.includes("JUMOWORLD")) return "Food";
   if (text.includes("CASH OUT") || text.includes("WITHDRAW")) return "Cash Withdrawal";
   if (text.includes("FOREX")) return "Forex/Exchange";
@@ -57,35 +116,29 @@ function categorize(description: string, transactionType: string, direction: "se
   return "Other";
 }
 
-// ============ PROVIDER DETECTION ============
+// ============ PROVIDER / ACCOUNT DETECTION ============
 
 function detectProvider(text: string): string {
   const lower = text.toLowerCase();
-
-  // Strong MTN indicators first (to avoid false Airtel matches from merchant names like "Payment for Airtel")
   const hasMTNMarkers =
-    lower.includes("mtn") ||
-    lower.includes("mobile money") ||
-    lower.includes("momo") ||
-    lower.includes("transaction id") ||
-    lower.includes("amount(ugx)") ||
-    lower.includes("fees(ugx)") ||
-    lower.includes("taxes(ugx)") ||
-    lower.includes("balance(ugx)");
-
-  // Airtel parser-specific markers
+    lower.includes("mtn") || lower.includes("mobile money") || lower.includes("momo") ||
+    lower.includes("transaction id") || lower.includes("amount(ugx)") || lower.includes("fees(ugx)") ||
+    lower.includes("taxes(ugx)") || lower.includes("balance(ugx)") || lower.includes("payment type");
   const hasAirtelMarkers =
-    lower.includes("airtel money") ||
-    lower.includes("transaction successful") ||
-    lower.includes(" credit ") ||
-    lower.includes(" debit ");
-
+    lower.includes("airtel money") || lower.includes("transaction successful") ||
+    lower.includes(" credit ") || lower.includes(" debit ");
   if (hasMTNMarkers) return "MTN MoMo";
   if (hasAirtelMarkers) return "Airtel Money";
   return "Unknown";
 }
 
-// ============ ACCOUNT HOLDER DETECTION ============
+type StatementFormat = "FORMAT_1" | "FORMAT_2";
+
+function detectStatementFormat(text: string): StatementFormat {
+  if (text.includes("Payment Type") || text.includes("To/From")) return "FORMAT_2";
+  if (text.includes("Amount(UGX)") && text.includes("Fees(UGX)")) return "FORMAT_1";
+  return "FORMAT_1";
+}
 
 function detectAccountHolder(text: string): string {
   const patterns = [
@@ -99,7 +152,6 @@ function detectAccountHolder(text: string): string {
   return "";
 }
 
-// Extract account holder from the most frequent "From" name in transactions
 function detectAccountHolderFromTransactions(transactions: ParsedTransaction[]): string {
   const fromCounts: Record<string, number> = {};
   for (const t of transactions) {
@@ -123,7 +175,6 @@ function detectPhoneNumber(text: string): string {
     /(?:Wallet|Mobile|Phone|MSISDN|Tel)\s*(?:Number|number|No\.?)?\s*[:\-]?\s*((?:\+?256)\d{9})/i,
     /(?:Wallet|Mobile|Phone|MSISDN|Tel)\s*(?:Number|number|No\.?)?\s*[:\-]?\s*(0\d{9})/i,
     /(?:Wallet|Mobile|Phone|MSISDN|Tel)\s*[:\-]?\s*(\d{10,15})/i,
-    // Standalone patterns
     /((?:\+256|256)\d{9})/,
     /(07[0-9]\d{7})/,
   ];
@@ -137,7 +188,6 @@ function detectPhoneNumber(text: string): string {
 function detectEmail(text: string): string {
   const m = text.match(/(?:Email|E-mail)\s*(?:Address)?\s*[:\-]?\s*([A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,})/i);
   if (m) return m[1].trim();
-  // Fallback: find any email
   const fallback = text.match(/[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}/);
   return fallback ? fallback[0] : "";
 }
@@ -166,7 +216,6 @@ export async function parsePDF(file: File): Promise<ParsedStatement> {
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
-  // Step 1: Extract all text from ALL pages
   let fullText = "";
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
@@ -175,6 +224,7 @@ export async function parsePDF(file: File): Promise<ParsedStatement> {
   }
 
   const provider = detectProvider(fullText);
+  const format = detectStatementFormat(fullText);
   let accountHolder = detectAccountHolder(fullText);
   const phoneNumber = detectPhoneNumber(fullText);
   const emailAddress = detectEmail(fullText);
@@ -187,18 +237,20 @@ export async function parsePDF(file: File): Promise<ParsedStatement> {
     transactions = parseAirtel(fullText, accountHolder);
     if (transactions.length === 0) transactions = parseMTNNewFormat(fullText, accountHolder);
     if (transactions.length === 0) transactions = parseMTN(fullText, accountHolder);
-  } else {
+  } else if (format === "FORMAT_2") {
     transactions = parseMTNNewFormat(fullText, accountHolder);
     if (transactions.length === 0) transactions = parseMTN(fullText, accountHolder);
     if (transactions.length === 0) transactions = parseAirtel(fullText, accountHolder);
+  } else {
+    transactions = parseMTN(fullText, accountHolder);
+    if (transactions.length === 0) transactions = parseMTNNewFormat(fullText, accountHolder);
+    if (transactions.length === 0) transactions = parseAirtel(fullText, accountHolder);
   }
 
-  // Fallback: extract account holder from most frequent "From" name in transactions
   if (!accountHolder && transactions.length > 0) {
     accountHolder = detectAccountHolderFromTransactions(transactions);
   }
 
-  // Compute totals
   let totalIn = 0, totalOut = 0, totalFees = 0, totalTaxes = 0;
   let incomingCount = 0, outgoingCount = 0;
 
@@ -214,9 +266,12 @@ export async function parsePDF(file: File): Promise<ParsedStatement> {
     totalTaxes += t.taxes;
   }
 
+  // Sort transactions by date ascending
+  transactions.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+
   const dates = transactions.map(t => t.date);
   const dateRange = { from: dates[0] || "", to: dates[dates.length - 1] || "" };
-  const resolvedPeriod = statementPeriod || statementDate || (dateRange.from && dateRange.to ? `${dateRange.from} to ${dateRange.to}` : "");
+  const resolvedPeriod = statementPeriod || statementDate || (dateRange.from && dateRange.to ? `${formatDateDisplay(dateRange.from)} to ${formatDateDisplay(dateRange.to)}` : "");
 
   let validationError: string | undefined;
   if (pdf.numPages > 1 && transactions.length < 10) {
@@ -232,24 +287,15 @@ export async function parsePDF(file: File): Promise<ParsedStatement> {
 }
 
 // ============ AIRTEL MONEY PARSER ============
-// Format: TransactionID  DD-MM-YY HH:MM AM/PM  Description  Amount  Credit/Debit  Fee  Balance
 
 function parseAirtel(fullText: string, accountHolder: string): ParsedTransaction[] {
   const transactions: ParsedTransaction[] = [];
-
-  // Airtel transaction IDs are long numbers (12+ digits) followed by date
-  // Pattern: <txId> <DD-MM-YY> <HH:MM AM/PM> <description> <amount> <Credit|Debit> <fee> <balance>
   const txRegex = /(\d{12,15})\s+(\d{2}-\d{2}-\d{2})\s+(\d{1,2}:\d{2}\s*[APap][Mm])\s+/g;
 
   const starts: { index: number; txId: string; date: string; time: string }[] = [];
   let match;
   while ((match = txRegex.exec(fullText)) !== null) {
-    starts.push({
-      index: match.index,
-      txId: match[1],
-      date: match[2],
-      time: match[3].trim(),
-    });
+    starts.push({ index: match.index, txId: match[1], date: match[2], time: match[3].trim() });
   }
 
   for (let i = 0; i < starts.length; i++) {
@@ -257,17 +303,13 @@ function parseAirtel(fullText: string, accountHolder: string): ParsedTransaction
     const endIdx = i + 1 < starts.length ? starts[i + 1].index : fullText.length;
     const block = fullText.substring(start.index + start.txId.length, endIdx).trim();
 
-    // Remove date+time from block start
     let rest = block;
     const dtMatch = rest.match(/^\s*\d{2}-\d{2}-\d{2}\s+\d{1,2}:\d{2}\s*[APap][Mm]\s*/);
     if (dtMatch) rest = rest.substring(dtMatch[0].length);
 
-    // Detect Credit or Debit
     const isCredit = /\bCredit\b/i.test(rest);
-    const isDebit = /\bDebit\b/i.test(rest);
     const type: "sent" | "received" = isCredit ? "received" : "sent";
 
-    // Extract amounts - find all decimal numbers (amount, fee, balance)
     const amounts: number[] = [];
     const amtRegex = /(\d{1,3}(?:,\d{3})*(?:\.\d{1,2}))/g;
     let am;
@@ -278,23 +320,18 @@ function parseAirtel(fullText: string, accountHolder: string): ParsedTransaction
     const amount = amounts[0] || 0;
     const fees = amounts[1] || 0;
     const balance = amounts[2] || 0;
-
     if (amount === 0) continue;
 
-    // Extract description: text before "Transaction Successful" or before amounts
-    let description = rest;
-    // Remove Credit/Debit, amounts, "Transaction Successful", and trailing data
-    description = description
+    let description = rest
       .replace(/Transaction\s+Successful/gi, "")
       .replace(/\b(Credit|Debit)\b/gi, "")
       .replace(/\d{1,3}(?:,\d{3})*(?:\.\d{1,2})/g, "")
-      .replace(/\d{12,15}/g, "") // remove next tx ID
-      .replace(/\d{2}-\d{2}-\d{2}/g, "") // remove dates
+      .replace(/\d{12,15}/g, "")
+      .replace(/\d{2}-\d{2}-\d{2}/g, "")
       .replace(/\d{1,2}:\d{2}\s*[APap][Mm]/g, "")
       .replace(/\s+/g, " ")
       .trim();
 
-    // Parse from/to from description
     let from = "", to = "";
     const receivedMatch = description.match(/Received\s+(?:Money\s+)?[Ff]rom\s+(\d+)[\s,]*(.+)?/i);
     const sentMatch = description.match(/Sent\s+Money\s+to\s+(\d+)\s+(.+)/i);
@@ -307,7 +344,6 @@ function parseAirtel(fullText: string, accountHolder: string): ParsedTransaction
       from = accountHolder || "Self";
     }
 
-    // Determine transaction type from description
     let transactionType = "Transfer";
     const descUpper = description.toUpperCase();
     if (descUpper.includes("RECEIVED")) transactionType = "Cash In";
@@ -315,9 +351,9 @@ function parseAirtel(fullText: string, accountHolder: string): ParsedTransaction
     if (descUpper.includes("CASH OUT") || descUpper.includes("WITHDRAW")) transactionType = "Cash Out";
     if (descUpper.includes("PAYMENT") || descUpper.includes("PAY BILL")) transactionType = "Payment";
 
-    // Convert DD-MM-YY to DD-MM-YYYY
+    // Convert DD-MM-YY to YYYY-MM-DD
     const dateParts = start.date.split("-");
-    const fullDate = `${dateParts[0]}-${dateParts[1]}-20${dateParts[2]}`;
+    const fullDate = `20${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
 
     const category = categorize(description, transactionType, type);
 
@@ -328,8 +364,10 @@ function parseAirtel(fullText: string, accountHolder: string): ParsedTransaction
       description: description || transactionType,
       transactionId: start.txId,
       from, to,
+      accountName: "",
+      reference: "",
       amount, fees,
-      taxes: 0, // Airtel doesn't show separate taxes
+      taxes: 0,
       balance,
       type,
       category,
@@ -339,33 +377,30 @@ function parseAirtel(fullText: string, accountHolder: string): ParsedTransaction
   return transactions;
 }
 
-// ============ MTN MOMO NEW FORMAT PARSER ============
-// Handles dates like "2 Jan 2026 01:01" with +/- amounts
-
-const MONTH_MAP: Record<string, string> = {
-  Jan: "01", Feb: "02", Mar: "03", Apr: "04", May: "05", Jun: "06",
-  Jul: "07", Aug: "08", Sep: "09", Oct: "10", Nov: "11", Dec: "12"
-};
-
-const MONTHS_PATTERN = "Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec";
+// ============ MTN MOMO NEW FORMAT PARSER (FORMAT_2) ============
+// Handles dates like "2 Jan 2026 01:01" with +/- signed amounts
+// Columns: Date & Time | Payment Type | To/From | Account Name | Amount | Transaction ID | Fees | Tax | Balance | Reference
 
 function parseMTNNewFormat(fullText: string, accountHolder: string): ParsedTransaction[] {
   const transactions: ParsedTransaction[] = [];
 
-  const dateRegex = new RegExp(`(\\d{1,2}\\s+(?:${MONTHS_PATTERN})\\s+\\d{4})\\s+(\\d{1,2}:\\d{2})`, 'g');
+  const dateRegex = new RegExp(`(\\d{1,2}\\s+(?:${MONTHS_PATTERN})\\s+\\d{4})\\s+(\\d{1,2}:\\d{2})`, "gi");
 
   const starts: { index: number; date: string; time: string; matchLen: number }[] = [];
   let match;
   while ((match = dateRegex.exec(fullText)) !== null) {
+    // Skip header dates (From date, To date)
+    const before = fullText.substring(Math.max(0, match.index - 30), match.index);
+    if (/(?:From|To)\s+date/i.test(before)) continue;
     starts.push({ index: match.index, date: match[1], time: match[2], matchLen: match[0].length });
   }
 
   if (starts.length === 0) return [];
 
   const paymentTypes = [
-    "MOMO TO BANK", "MOMO USER", "CASH OUT", "CASH IN", "INTERNET BUNDLE",
-    "VOICE BUNDLE", "AIRTIME", "DEBIT", "PAYMENT", "OTHER", "YANGE",
-    "MERCHANT PAYMENT", "BUNDLE PURCHASE"
+    "MOMO TO BANK", "INTERNET BUNDLE", "VOICE BUNDLE", "MERCHANT PAYMENT",
+    "BUNDLE PURCHASE", "MOMO USER", "CASH OUT", "CASH IN",
+    "AIRTIME", "DEBIT", "PAYMENT", "OTHER", "YANGE",
   ];
 
   for (let i = 0; i < starts.length; i++) {
@@ -373,10 +408,22 @@ function parseMTNNewFormat(fullText: string, accountHolder: string): ParsedTrans
     const endIdx = i + 1 < starts.length ? starts[i + 1].index : fullText.length;
     let rest = fullText.substring(start.index + start.matchLen, endIdx).trim();
 
-    // Detect payment type
+    // Strip disclaimer/footer text
+    const disclaimerIdx = rest.indexOf("Disclaimer");
+    if (disclaimerIdx !== -1) rest = rest.substring(0, disclaimerIdx).trim();
+    const pageIdx = rest.indexOf("Page ");
+    if (pageIdx !== -1 && pageIdx < rest.length - 20) {
+      const afterPage = rest.substring(pageIdx);
+      if (/^Page\s+\d+\s+of\s+\d+/i.test(afterPage)) {
+        rest = rest.substring(0, pageIdx).trim();
+      }
+    }
+
+    // Match payment type
     let transactionType = "";
+    const restUpper = rest.toUpperCase();
     for (const pt of paymentTypes) {
-      if (rest.toUpperCase().startsWith(pt)) {
+      if (restUpper.startsWith(pt)) {
         transactionType = pt;
         rest = rest.substring(pt.length).trim();
         break;
@@ -384,79 +431,115 @@ function parseMTNNewFormat(fullText: string, accountHolder: string): ParsedTrans
     }
     if (!transactionType) continue;
 
-    // Find amount with +/- prefix (e.g., +2642558.00, -1100.00)
+    // Find signed amount (+/- prefix)
     const amountMatch = rest.match(/([+-]\d+(?:\.\d{1,2})?)/);
-    const rawAmount = amountMatch ? parseFloat(amountMatch[1]) : 0;
+    if (!amountMatch || amountMatch.index === undefined) continue;
+    const rawAmount = parseFloat(amountMatch[1]);
     if (rawAmount === 0) continue;
 
     const amount = Math.abs(rawAmount);
+    // Format 2: + means IN, - means OUT
     const type: "sent" | "received" = rawAmount > 0 ? "received" : "sent";
 
-    // Find transaction ID (11-digit number)
-    const txIdMatch = rest.match(/\b(3\d{10})\b/);
-    const transactionId = txIdMatch ? txIdMatch[1] : "";
+    // Text before signed amount = To/From phone + Account Name
+    const beforeAmount = rest.substring(0, amountMatch.index).trim();
+    // Text after signed amount
+    const afterAmount = rest.substring(amountMatch.index + amountMatch[0].length).trim();
 
-    // Extract description: text before the +/- amount
-    let description = "";
-    if (amountMatch && amountMatch.index !== undefined) {
-      description = rest.substring(0, amountMatch.index).trim();
+    // Extract Account Name: remove phone numbers and leading digit IDs
+    let accountName = beforeAmount
+      .replace(/\+256[\s\d]+/g, "") // remove +256 phone numbers
+      .replace(/^\d{1,3}\s+/, "")    // remove leading digit IDs (1, 4, etc.)
+      .replace(/\s+/g, " ")
+      .trim();
+
+    // Clean up: remove any trailing digits that might be phone fragments
+    accountName = accountName.replace(/\s+\d{1,2}$/, "").trim();
+
+    // Extract phone number from beforeAmount
+    const phoneMatch = beforeAmount.match(/(\+256[\s\d]+)/);
+    const phone = phoneMatch ? phoneMatch[1].replace(/\s/g, "") : "";
+
+    // Set from/to based on direction
+    let from = "", to = "";
+    if (type === "received") {
+      from = accountName || phone || "Unknown";
+      to = accountHolder || "Self";
+    } else {
+      to = accountName || phone || "Unknown";
+      from = accountHolder || "Self";
     }
 
-    // Extract UGX values for fees and balance
+    // Transaction ID (10-12 digit number)
+    const txIdMatch = afterAmount.match(/\b(\d{10,12})\b/);
+    const transactionId = txIdMatch ? txIdMatch[1] : "";
+
+    // Extract fees and balance from text after transaction ID
+    let afterTxnId = "";
+    if (txIdMatch) {
+      const txIdPos = afterAmount.indexOf(txIdMatch[1]);
+      afterTxnId = afterAmount.substring(txIdPos + txIdMatch[1].length).trim();
+    } else {
+      afterTxnId = afterAmount;
+    }
+
+    // UGX-prefixed values for fees
     const ugxValues: number[] = [];
     const ugxRegex = /UGX\s+(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)/g;
     let um;
-    while ((um = ugxRegex.exec(rest)) !== null) {
+    while ((um = ugxRegex.exec(afterTxnId)) !== null) {
       ugxValues.push(parseUGXAmount(um[1]));
     }
 
     const fees = ugxValues[0] || 0;
-    const balance = ugxValues[1] || 0;
 
-    // Extract from/to from description
-    let from = "", to = "";
-    const phoneNameMatch = description.match(/(\+256[\s\d]+?)\s+([A-Z][A-Z\s]+)/);
-    if (phoneNameMatch) {
-      const contactName = phoneNameMatch[2].trim();
-      if (type === "received") {
-        from = contactName;
-        to = accountHolder || "Self";
-      } else {
-        to = contactName;
-        from = accountHolder || "Self";
-      }
-    } else {
-      // Try just name extraction
-      const nameOnly = description.replace(/\+256[\s\d]+/g, "").trim();
-      if (nameOnly.length > 1) {
-        if (type === "received") {
-          from = nameOnly;
-          to = accountHolder || "Self";
-        } else {
-          to = nameOnly;
-          from = accountHolder || "Self";
-        }
+    // Balance: prefer last large comma-separated number
+    let balance = ugxValues.length >= 2 ? ugxValues[ugxValues.length - 1] : 0;
+    if (balance === 0) {
+      const bareBalanceMatches = afterTxnId.match(/(\d{1,3}(?:,\d{3})+\.\d{2})/g);
+      if (bareBalanceMatches) {
+        const lastBare = bareBalanceMatches[bareBalanceMatches.length - 1];
+        balance = parseUGXAmount(lastBare);
       }
     }
 
-    // Convert "2 Jan 2026" to "02-01-2026"
+    // Reference: extract from end of afterTxnId
+    let reference = afterTxnId
+      .replace(/\b\d{10,12}\b/g, "")
+      .replace(/UGX\s+\d[\d,.]*/g, "")
+      .replace(/\d{1,3}(?:,\d{3})+\.\d{2}/g, "")
+      .replace(/[-–]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    // Filter out noise (very short or just numbers)
+    if (reference.length < 2 || /^\d+$/.test(reference)) reference = "";
+
+    // Convert date to YYYY-MM-DD
     const dateParts = start.date.match(/(\d{1,2})\s+(\w{3})\s+(\d{4})/);
     let normalizedDate = start.date;
     if (dateParts) {
-      const day = dateParts[1].padStart(2, '0');
-      const month = MONTH_MAP[dateParts[2]] || "01";
-      normalizedDate = `${day}-${month}-${dateParts[3]}`;
+      const day = dateParts[1].padStart(2, "0");
+      const monthKey = dateParts[2].charAt(0).toUpperCase() + dateParts[2].slice(1).toLowerCase();
+      const month = MONTH_MAP[monthKey] || "01";
+      normalizedDate = `${dateParts[3]}-${month}-${day}`;
     }
 
-    const category = categorize(description + " " + transactionType, transactionType, type);
+    const category = categorize(
+      (accountName || beforeAmount) + " " + transactionType,
+      transactionType,
+      type,
+    );
 
     transactions.push({
       date: normalizedDate,
       time: start.time,
       transactionType,
-      description: description || transactionType,
+      description: accountName || beforeAmount || transactionType,
       transactionId,
-      from, to,
+      from,
+      to,
+      accountName: accountName || "",
+      reference: reference || "",
       amount,
       fees,
       taxes: 0,
@@ -469,12 +552,11 @@ function parseMTNNewFormat(fullText: string, accountHolder: string): ParsedTrans
   return transactions;
 }
 
-// ============ MTN MOMO PARSER ============
+// ============ MTN MOMO PARSER (FORMAT_1) ============
 
 function parseMTN(fullText: string, accountHolder: string): ParsedTransaction[] {
   const transactions: ParsedTransaction[] = [];
 
-  // Support multiple date formats: DD-MM-YYYY, DD/MM/YYYY, YYYY-MM-DD, YYYY/MM/DD
   const txStartRegex = /(\d{2}[\/-]\d{2}[\/-]\d{4}|\d{4}[\/-]\d{2}[\/-]\d{2})\s+(\d{1,2}:\d{2}(?::\d{2})?(?:\s*[APap][Mm])?)/g;
 
   const starts: { index: number; date: string; time: string }[] = [];
@@ -483,7 +565,6 @@ function parseMTN(fullText: string, accountHolder: string): ParsedTransaction[] 
     starts.push({ index: match.index, date: match[1], time: match[2].trim() });
   }
 
-  // If no date+time found, try date-only pattern
   if (starts.length === 0) {
     const dateOnlyRegex = /(\d{2}[\/-]\d{2}[\/-]\d{4}|\d{4}[\/-]\d{2}[\/-]\d{2})/g;
     while ((match = dateOnlyRegex.exec(fullText)) !== null) {
@@ -496,11 +577,9 @@ function parseMTN(fullText: string, accountHolder: string): ParsedTransaction[] 
     const end = i + 1 < starts.length ? starts[i + 1].index : fullText.length;
     const block = fullText.substring(start.index, end);
 
-    // Remove the date+time prefix
     const prefixLen = start.date.length + (start.time ? 1 + start.time.length : 0);
     let rest = block.substring(prefixLen).trim();
 
-    // Transaction Type
     let transactionType = "";
     const typePatterns = [
       "Cash Out", "Cash In", "Payment", "Incoming Transfer", "Outgoing Transfer",
@@ -524,7 +603,6 @@ function parseMTN(fullText: string, accountHolder: string): ParsedTransaction[] 
       }
     }
 
-    // Transaction ID - MTN IDs can vary (try multiple patterns)
     const txIdMatch = rest.match(/\b(\d{10,15})\b/);
     const transactionId = txIdMatch ? txIdMatch[1] : "";
 
@@ -533,7 +611,6 @@ function parseMTN(fullText: string, accountHolder: string): ParsedTransaction[] 
       description = rest.substring(0, txIdMatch.index).trim();
       rest = rest.substring(txIdMatch.index + txIdMatch[0].length).trim();
     } else {
-      // Find where amounts start
       const firstAmountIdx = rest.search(/\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+\.\d{2}/);
       if (firstAmountIdx > 0) {
         description = rest.substring(0, firstAmountIdx).trim();
@@ -544,7 +621,6 @@ function parseMTN(fullText: string, accountHolder: string): ParsedTransaction[] 
       }
     }
 
-    // From/To
     let from = "", to = "";
     const fromToMatch = description.match(/(.+?)\s+(?:to|TO)\s+(.+)/i);
     if (fromToMatch) {
@@ -554,7 +630,6 @@ function parseMTN(fullText: string, accountHolder: string): ParsedTransaction[] 
       from = description;
     }
 
-    // UGX amounts - support both comma-separated and plain decimals
     const ugxAmounts: number[] = [];
     const amountRegex = /(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?|\d+\.\d{2})/g;
     let amtMatch;
@@ -570,15 +645,18 @@ function parseMTN(fullText: string, accountHolder: string): ParsedTransaction[] 
 
     if (amount === 0 && fees === 0) continue;
 
-    // Normalize date to DD-MM-YYYY
+    // Normalize date to YYYY-MM-DD
     let normalizedDate = start.date.replace(/\//g, "-");
-    // If YYYY-MM-DD format, convert to DD-MM-YYYY
     if (/^\d{4}-/.test(normalizedDate)) {
+      // Already YYYY-MM-DD
+    } else {
+      // DD-MM-YYYY → YYYY-MM-DD
       const parts = normalizedDate.split("-");
-      normalizedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+      if (parts.length === 3) {
+        normalizedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+      }
     }
 
-    // Direction
     const holderNorm = accountHolder.replace(/\s+/g, "").toUpperCase();
     const fromNorm = from.replace(/\s+/g, "").toUpperCase();
     const toNorm = to.replace(/\s+/g, "").toUpperCase();
@@ -599,7 +677,10 @@ function parseMTN(fullText: string, accountHolder: string): ParsedTransaction[] 
     transactions.push({
       date: normalizedDate, time: start.time, transactionType,
       description: description || transactionType,
-      transactionId, from, to, amount, fees, taxes, balance, type, category,
+      transactionId, from, to,
+      accountName: "",
+      reference: "",
+      amount, fees, taxes, balance, type, category,
     });
   }
 

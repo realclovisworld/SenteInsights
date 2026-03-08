@@ -37,7 +37,7 @@ function generateInsightTexts(transactions: ParsedStatement["transactions"]): st
       categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
       totalOut += t.amount;
     } else {
-      const sender = t.from?.trim() || t.description?.trim() || "Unknown";
+      const sender = t.accountName?.trim() || t.from?.trim() || t.description?.trim() || "Unknown";
       incomeSources[sender] = (incomeSources[sender] || 0) + t.amount;
     }
     totalFees += t.fees;
@@ -422,7 +422,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <TransactionTable transactions={data.transactions} plan={userPlan} />
+        <TransactionTable transactions={data.transactions} plan={userPlan} accountHolder={data.accountHolder} dateRange={data.dateRange} />
 
         <FeatureGate plan={userPlan} feature="statementHistory" mode="blur" lockMessage="Statement history available on Starter plan and above">
           <StatementHistory onViewStatement={handleViewStatement} refreshKey={historyRefreshKey} userId={effectiveUserId} />

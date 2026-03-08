@@ -77,6 +77,9 @@ export async function incrementPageCount(userId: string, numPages: number) {
 
 function parseDateForDB(dateStr: string): string | null {
   if (!dateStr) return null;
+  // Dates are now YYYY-MM-DD from the parser, pass through directly
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+  // Legacy DD-MM-YYYY fallback
   const parts = dateStr.split("-");
   if (parts.length === 3 && parts[2].length === 4) {
     return `${parts[2]}-${parts[1]}-${parts[0]}`;
@@ -214,19 +217,17 @@ export async function fetchStatementTransactions(statementId: string): Promise<P
   }
 
   return (data || []).map((t: StoredTransaction) => {
-    let displayDate = t.date || "";
-    if (displayDate.includes("-") && displayDate.split("-")[0].length === 4) {
-      const p = displayDate.split("-");
-      displayDate = `${p[2]}-${p[1]}-${p[0]}`;
-    }
+    // Dates are stored as YYYY-MM-DD in DB, keep as-is
     return {
-      date: displayDate,
+      date: t.date || "",
       time: t.time || "",
       transactionType: t.transaction_type || "",
       description: t.description || "",
       transactionId: t.transaction_id_ref || "",
       from: "",
       to: "",
+      accountName: "",
+      reference: "",
       amount: t.amount || 0,
       fees: t.fees || 0,
       taxes: t.taxes || 0,
@@ -264,8 +265,9 @@ export async function fetchFullStatement(statementId: string): Promise<ParsedSta
   const incomingCount = transactions.filter(t => t.type === "received").length;
   const outgoingCount = transactions.filter(t => t.type === "sent").length;
 
-  const dateFrom = stmt.date_from ? (() => { const p = stmt.date_from.split("-"); return p[0].length === 4 ? `${p[2]}-${p[1]}-${p[0]}` : stmt.date_from; })() : "";
-  const dateTo = stmt.date_to ? (() => { const p = stmt.date_to.split("-"); return p[0].length === 4 ? `${p[2]}-${p[1]}-${p[0]}` : stmt.date_to; })() : "";
+  // Dates are YYYY-MM-DD in DB, keep as-is
+  const dateFrom = stmt.date_from || "";
+  const dateTo = stmt.date_to || "";
 
   return {
     transactions,

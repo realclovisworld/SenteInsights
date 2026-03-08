@@ -11,10 +11,15 @@ interface IncomeSourcesChartProps {
 const IncomeSourcesChart = ({ transactions }: IncomeSourcesChartProps) => {
   const data = useMemo(() => {
     const incomeMap: Record<string, number> = {};
+    // Payment type keywords to exclude from labels
+    const paymentTypeKeywords = ["MOMO USER", "CASH OUT", "CASH IN", "DEBIT", "OTHER", "YANGE", "AIRTIME", "PAYMENT", "NETWORKS"];
     for (const t of transactions) {
       if (t.type === "received") {
-        const sender = t.from?.trim() || t.description?.trim() || "Unknown";
-        // Clean up sender name - take first meaningful part
+        let sender = t.accountName?.trim() || t.from?.trim() || t.description?.trim() || "Unknown";
+        // Never use payment type as income source label
+        if (paymentTypeKeywords.some(kw => sender.toUpperCase() === kw)) {
+          sender = t.from?.trim() || t.description?.trim() || "Unknown";
+        }
         const name = sender.substring(0, 30);
         incomeMap[name] = (incomeMap[name] || 0) + t.amount;
       }
