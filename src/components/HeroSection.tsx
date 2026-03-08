@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import heroDashboard from "@/assets/hero-dashboard.png";
+import DashboardMockup from "@/components/DashboardMockup";
 
 const HeroSection = () => {
   return (
@@ -32,21 +32,7 @@ const HeroSection = () => {
           </div>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.7, delay: 0.2 }}
-          className="relative"
-        >
-          <div className="bg-surface rounded-2xl shadow-card overflow-hidden">
-            <img
-              src={heroDashboard}
-              alt="MoMoSense dashboard preview showing spending breakdown"
-              className="w-full h-auto"
-              loading="lazy"
-            />
-          </div>
-        </motion.div>
+        <DashboardMockup />
       </div>
     </section>
   );
