@@ -132,6 +132,9 @@ export async function parsePDF(file: File): Promise<ParsedStatement> {
 
   const provider = detectProvider(fullText);
   const accountHolder = detectAccountHolder(fullText);
+  const phoneNumber = detectPhoneNumber(fullText);
+  const emailAddress = detectEmail(fullText);
+  const statementPeriod = detectStatementPeriod(fullText);
 
   let transactions: ParsedTransaction[];
 
@@ -159,6 +162,7 @@ export async function parsePDF(file: File): Promise<ParsedStatement> {
 
   const dates = transactions.map(t => t.date);
   const dateRange = { from: dates[0] || "", to: dates[dates.length - 1] || "" };
+  const resolvedPeriod = statementPeriod || (dateRange.from && dateRange.to ? `${dateRange.from} to ${dateRange.to}` : "");
 
   let validationError: string | undefined;
   if (pdf.numPages > 1 && transactions.length < 10) {
@@ -168,7 +172,8 @@ export async function parsePDF(file: File): Promise<ParsedStatement> {
   return {
     transactions, totalIn, totalOut, totalFees, totalTaxes,
     netBalance: totalIn - totalOut,
-    incomingCount, outgoingCount, accountHolder, provider, dateRange, validationError,
+    incomingCount, outgoingCount, accountHolder, phoneNumber, emailAddress,
+    provider, statementPeriod: resolvedPeriod, dateRange, validationError,
   };
 }
 
