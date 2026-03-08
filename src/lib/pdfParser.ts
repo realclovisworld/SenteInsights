@@ -72,12 +72,46 @@ function detectProvider(text: string): string {
 
 function detectAccountHolder(text: string): string {
   const patterns = [
-    /Account\s*Name\s*[:\-]?\s*([A-Z][A-Z\s]+?)(?:\s*Mobile|\s*Phone|\s*Email|\s*\d)/i,
-    /(?:Statement\s+for|Subscriber|Name)\s*[:\-]?\s*([A-Z][A-Z\s]{3,})/i,
+    /(?:Customer\s*Name|Account\s*Name|Subscriber\s*Name|Name)\s*[:\-]?\s*([A-Z][A-Za-z\s]+?)(?:\s*(?:Mobile|Phone|Email|Account|$|\d))/im,
+    /(?:Statement\s+for|Subscriber)\s*[:\-]?\s*([A-Z][A-Z\s]{3,})/i,
   ];
   for (const p of patterns) {
     const m = text.match(p);
     if (m) return m[1].trim();
+  }
+  return "";
+}
+
+function detectPhoneNumber(text: string): string {
+  const patterns = [
+    /(?:Mobile|Phone|MSISDN|Tel|Number)\s*(?:Number|No\.?)?\s*[:\-]?\s*((?:\+?256|0)\d[\s\-]?\d{3}[\s\-]?\d{3}[\s\-]?\d{3})/i,
+    /(?:Mobile|Phone|MSISDN|Tel)\s*[:\-]?\s*(\d{10,15})/i,
+    /((?:\+256|256)\d{9})/,
+    /(07[0-9]\d{7})/,
+  ];
+  for (const p of patterns) {
+    const m = text.match(p);
+    if (m) return m[1].replace(/[\s\-]/g, "").trim();
+  }
+  return "";
+}
+
+function detectEmail(text: string): string {
+  const m = text.match(/(?:Email|E-mail)\s*(?:Address)?\s*[:\-]?\s*([A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,})/i);
+  if (m) return m[1].trim();
+  // Fallback: find any email
+  const fallback = text.match(/[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}/);
+  return fallback ? fallback[0] : "";
+}
+
+function detectStatementPeriod(text: string): string {
+  const patterns = [
+    /(?:Statement\s*Period|Period|Date\s*Range|From)\s*[:\-]?\s*(\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})\s*(?:to|[-–])\s*(\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})/i,
+    /(?:From)\s*[:\-]?\s*(\d{1,2}\s+\w+\s+\d{4})\s*(?:to|[-–])\s*(\d{1,2}\s+\w+\s+\d{4})/i,
+  ];
+  for (const p of patterns) {
+    const m = text.match(p);
+    if (m) return `${m[1]} to ${m[2]}`;
   }
   return "";
 }
