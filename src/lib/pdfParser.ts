@@ -155,12 +155,14 @@ export async function parsePDF(file: File): Promise<ParsedStatement> {
   const emailAddress = detectEmail(fullText);
   const statementPeriod = detectStatementPeriod(fullText);
 
-  let transactions: ParsedTransaction[];
+  let transactions: ParsedTransaction[] = [];
 
   if (provider === "Airtel Money") {
     transactions = parseAirtel(fullText, accountHolder);
+    if (transactions.length === 0) transactions = parseMTN(fullText, accountHolder);
   } else {
     transactions = parseMTN(fullText, accountHolder);
+    if (transactions.length === 0) transactions = parseAirtel(fullText, accountHolder);
   }
 
   // Compute totals
