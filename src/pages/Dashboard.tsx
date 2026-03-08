@@ -9,6 +9,7 @@ import SavingsGoal from "@/components/SavingsGoal";
 import AIInsights from "@/components/AIInsights";
 import TransactionTable from "@/components/TransactionTable";
 import IncomeSourcesChart from "@/components/IncomeSourcesChart";
+import AccountInfoCard from "@/components/AccountInfoCard";
 import { parsePDF, type ParsedStatement } from "@/lib/pdfParser";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
