@@ -77,6 +77,9 @@ export async function incrementPageCount(userId: string, numPages: number) {
 
 function parseDateForDB(dateStr: string): string | null {
   if (!dateStr) return null;
+  // Dates are now YYYY-MM-DD from the parser, pass through directly
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+  // Legacy DD-MM-YYYY fallback
   const parts = dateStr.split("-");
   if (parts.length === 3 && parts[2].length === 4) {
     return `${parts[2]}-${parts[1]}-${parts[0]}`;
