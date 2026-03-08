@@ -67,7 +67,7 @@ const StatementHistory = ({ onViewStatement, refreshKey }: StatementHistoryProps
           return (
             <div
               key={stmt.id}
-              className="flex items-center justify-between p-3 rounded-lg border border-border bg-background hover:bg-muted/30 transition-colors"
+              className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-lg border border-border bg-background hover:bg-muted/30 transition-colors"
             >
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-8 h-8 rounded-full bg-primary-light flex items-center justify-center flex-shrink-0">
@@ -82,7 +82,7 @@ const StatementHistory = ({ onViewStatement, refreshKey }: StatementHistoryProps
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 flex-shrink-0">
+              <div className="flex items-center justify-between sm:justify-end gap-3 flex-shrink-0 pl-11 sm:pl-0">
                 <span className={`text-sm font-mono font-semibold ${(stmt.net_balance || 0) >= 0 ? "text-green-600" : "text-red-500"}`}>
                   UGX {(stmt.net_balance || 0).toLocaleString("en-UG")}
                 </span>
