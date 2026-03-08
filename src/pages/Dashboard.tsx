@@ -3,6 +3,7 @@ import { useAuth, useUser } from "@clerk/react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import FileUpload from "@/components/FileUpload";
+import BatchFileUpload, { type BatchFileItem } from "@/components/BatchFileUpload";
 import StatCards from "@/components/StatCards";
 import SpendingChart from "@/components/SpendingChart";
 import MonthlyTrend from "@/components/MonthlyTrend";
