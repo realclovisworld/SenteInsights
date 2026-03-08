@@ -117,16 +117,32 @@ const faqs = [
     a: "One page = one page of your PDF statement. A 10-page PDF counts as 10 pages toward your limit.",
   },
   {
-    q: "Can I upgrade or downgrade?",
-    a: "Yes, anytime from your account settings. Changes take effect immediately.",
+    q: "How do I pay?",
+    a: "We accept MTN MoMo and Airtel Money. Simply send the plan amount to the number shown, then click your plan and enter the transaction ID from your confirmation SMS. Your plan is activated within 2 hours after verification.",
   },
   {
-    q: "How do I pay?",
-    a: "Mobile Money (MTN MoMo & Airtel Money) — coming soon. Currently manual via bank transfer.",
+    q: "How long does activation take?",
+    a: "After submitting your transaction ID, our team verifies your payment and activates your plan within 2 hours. You'll see your new plan reflected in your dashboard once it's active.",
+  },
+  {
+    q: "Can I upgrade or downgrade?",
+    a: "Yes! To upgrade, simply pay for the new plan via Mobile Money and submit the transaction ID. Your plan will be updated after verification. Downgrades take effect at the end of your current billing cycle.",
+  },
+  {
+    q: "What happens when my plan expires?",
+    a: "Paid plans last 30 days from activation. When your plan expires, you'll revert to the free Registered tier (5 pages/day). You can renew anytime by making a new payment.",
   },
   {
     q: "Is my data safe?",
-    a: "All processing is done in your browser. We never store your statement data on any server.",
+    a: "Yes. All statement processing happens in your browser — your PDF data is never uploaded or stored on any server. We only store the parsed summary and transaction data in your secure account.",
+  },
+  {
+    q: "Do I need an account to use MoMoSense?",
+    a: "You can try it without an account (1 page/day with watermarked export). Sign up for free to get 5 pages/day, full exports, and AI insights. Paid plans unlock even higher limits.",
+  },
+  {
+    q: "What payment reference should I use?",
+    a: "When sending Mobile Money, use your email address as the payment reference or reason. This helps us match your payment to your account quickly.",
   },
 ];
 
