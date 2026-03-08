@@ -37,7 +37,7 @@ function generateInsightTexts(transactions: ParsedStatement["transactions"]): st
       categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
       totalOut += t.amount;
     } else {
-      const sender = t.from?.trim() || t.description?.trim() || "Unknown";
+      const sender = t.accountName?.trim() || t.from?.trim() || t.description?.trim() || "Unknown";
       incomeSources[sender] = (incomeSources[sender] || 0) + t.amount;
     }
     totalFees += t.fees;
