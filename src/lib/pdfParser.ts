@@ -122,8 +122,11 @@ function detectAccountHolderFromTransactions(transactions: ParsedTransaction[]):
 
 function detectPhoneNumber(text: string): string {
   const patterns = [
-    /(?:Mobile|Phone|MSISDN|Tel|Number)\s*(?:Number|No\.?)?\s*[:\-]?\s*((?:\+?256|0)\d[\s\-]?\d{3}[\s\-]?\d{3}[\s\-]?\d{3})/i,
+    // "Mobile Number 256760325115" or "Phone Number: +256..."
+    /(?:Mobile|Phone|MSISDN|Tel)\s*(?:Number|No\.?)?\s*[:\-]?\s*((?:\+?256)\d{9})/i,
+    /(?:Mobile|Phone|MSISDN|Tel)\s*(?:Number|No\.?)?\s*[:\-]?\s*(0\d{9})/i,
     /(?:Mobile|Phone|MSISDN|Tel)\s*[:\-]?\s*(\d{10,15})/i,
+    // Standalone patterns
     /((?:\+256|256)\d{9})/,
     /(07[0-9]\d{7})/,
   ];
