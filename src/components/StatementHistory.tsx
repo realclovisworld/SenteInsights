@@ -7,21 +7,22 @@ import { fetchRecentStatements, type StatementSummary } from "@/lib/supabase-hel
 interface StatementHistoryProps {
   onViewStatement: (statementId: string) => void;
   refreshKey?: number;
+  userId: string;
 }
 
-const StatementHistory = ({ onViewStatement, refreshKey }: StatementHistoryProps) => {
+const StatementHistory = ({ onViewStatement, refreshKey, userId }: StatementHistoryProps) => {
   const [statements, setStatements] = useState<StatementSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      const data = await fetchRecentStatements(5);
+      const data = await fetchRecentStatements(userId, 5);
       setStatements(data);
       setLoading(false);
     };
     load();
-  }, [refreshKey]);
+  }, [refreshKey, userId]);
 
   if (loading) {
     return (
