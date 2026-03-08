@@ -14,7 +14,245 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      insights: {
+        Row: {
+          generated_at: string | null
+          id: string
+          insight_text: string | null
+          statement_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          generated_at?: string | null
+          id?: string
+          insight_text?: string | null
+          statement_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          generated_at?: string | null
+          id?: string
+          insight_text?: string | null
+          statement_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insights_statement_id_fkey"
+            columns: ["statement_id"]
+            isOneToOne: false
+            referencedRelation: "statements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          last_reset_date: string | null
+          pages_limit_month: number | null
+          pages_used_month: number | null
+          pages_used_today: number | null
+          plan: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          last_reset_date?: string | null
+          pages_limit_month?: number | null
+          pages_used_month?: number | null
+          pages_used_today?: number | null
+          plan?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          last_reset_date?: string | null
+          pages_limit_month?: number | null
+          pages_used_month?: number | null
+          pages_used_today?: number | null
+          plan?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      statements: {
+        Row: {
+          account_name: string | null
+          date_from: string | null
+          date_to: string | null
+          id: string
+          net_balance: number | null
+          provider: string | null
+          total_fees: number | null
+          total_in: number | null
+          total_out: number | null
+          total_pages: number | null
+          total_taxes: number | null
+          total_transactions: number | null
+          uploaded_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          account_name?: string | null
+          date_from?: string | null
+          date_to?: string | null
+          id?: string
+          net_balance?: number | null
+          provider?: string | null
+          total_fees?: number | null
+          total_in?: number | null
+          total_out?: number | null
+          total_pages?: number | null
+          total_taxes?: number | null
+          total_transactions?: number | null
+          uploaded_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          account_name?: string | null
+          date_from?: string | null
+          date_to?: string | null
+          id?: string
+          net_balance?: number | null
+          provider?: string | null
+          total_fees?: number | null
+          total_in?: number | null
+          total_out?: number | null
+          total_pages?: number | null
+          total_taxes?: number | null
+          total_transactions?: number | null
+          uploaded_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "statements_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          amount_ugx: number | null
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          pages_limit: number | null
+          payment_method: string | null
+          payment_reference: string | null
+          plan: string
+          started_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount_ugx?: number | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          pages_limit?: number | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          plan: string
+          started_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount_ugx?: number | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          pages_limit?: number | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          plan?: string
+          started_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      transactions: {
+        Row: {
+          amount: number | null
+          category: string | null
+          created_at: string | null
+          date: string | null
+          description: string | null
+          direction: string | null
+          fees: number | null
+          id: string
+          running_balance: number | null
+          statement_id: string | null
+          taxes: number | null
+          time: string | null
+          transaction_id_ref: string | null
+          transaction_type: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount?: number | null
+          category?: string | null
+          created_at?: string | null
+          date?: string | null
+          description?: string | null
+          direction?: string | null
+          fees?: number | null
+          id?: string
+          running_balance?: number | null
+          statement_id?: string | null
+          taxes?: number | null
+          time?: string | null
+          transaction_id_ref?: string | null
+          transaction_type?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number | null
+          category?: string | null
+          created_at?: string | null
+          date?: string | null
+          description?: string | null
+          direction?: string | null
+          fees?: number | null
+          id?: string
+          running_balance?: number | null
+          statement_id?: string | null
+          taxes?: number | null
+          time?: string | null
+          transaction_id_ref?: string | null
+          transaction_type?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_statement_id_fkey"
+            columns: ["statement_id"]
+            isOneToOne: false
+            referencedRelation: "statements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
