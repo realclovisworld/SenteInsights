@@ -339,6 +339,136 @@ function parseAirtel(fullText: string, accountHolder: string): ParsedTransaction
   return transactions;
 }
 
+// ============ MTN MOMO NEW FORMAT PARSER ============
+// Handles dates like "2 Jan 2026 01:01" with +/- amounts
+
+const MONTH_MAP: Record<string, string> = {
+  Jan: "01", Feb: "02", Mar: "03", Apr: "04", May: "05", Jun: "06",
+  Jul: "07", Aug: "08", Sep: "09", Oct: "10", Nov: "11", Dec: "12"
+};
+
+const MONTHS_PATTERN = "Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec";
+
+function parseMTNNewFormat(fullText: string, accountHolder: string): ParsedTransaction[] {
+  const transactions: ParsedTransaction[] = [];
+
+  const dateRegex = new RegExp(`(\\d{1,2}\\s+(?:${MONTHS_PATTERN})\\s+\\d{4})\\s+(\\d{1,2}:\\d{2})`, 'g');
+
+  const starts: { index: number; date: string; time: string; matchLen: number }[] = [];
+  let match;
+  while ((match = dateRegex.exec(fullText)) !== null) {
+    starts.push({ index: match.index, date: match[1], time: match[2], matchLen: match[0].length });
+  }
+
+  if (starts.length === 0) return [];
+
+  const paymentTypes = [
+    "MOMO TO BANK", "MOMO USER", "CASH OUT", "CASH IN", "INTERNET BUNDLE",
+    "VOICE BUNDLE", "AIRTIME", "DEBIT", "PAYMENT", "OTHER", "YANGE",
+    "MERCHANT PAYMENT", "BUNDLE PURCHASE"
+  ];
+
+  for (let i = 0; i < starts.length; i++) {
+    const start = starts[i];
+    const endIdx = i + 1 < starts.length ? starts[i + 1].index : fullText.length;
+    let rest = fullText.substring(start.index + start.matchLen, endIdx).trim();
+
+    // Detect payment type
+    let transactionType = "";
+    for (const pt of paymentTypes) {
+      if (rest.toUpperCase().startsWith(pt)) {
+        transactionType = pt;
+        rest = rest.substring(pt.length).trim();
+        break;
+      }
+    }
+    if (!transactionType) continue;
+
+    // Find amount with +/- prefix (e.g., +2642558.00, -1100.00)
+    const amountMatch = rest.match(/([+-]\d+(?:\.\d{1,2})?)/);
+    const rawAmount = amountMatch ? parseFloat(amountMatch[1]) : 0;
+    if (rawAmount === 0) continue;
+
+    const amount = Math.abs(rawAmount);
+    const type: "sent" | "received" = rawAmount > 0 ? "received" : "sent";
+
+    // Find transaction ID (11-digit number)
+    const txIdMatch = rest.match(/\b(3\d{10})\b/);
+    const transactionId = txIdMatch ? txIdMatch[1] : "";
+
+    // Extract description: text before the +/- amount
+    let description = "";
+    if (amountMatch && amountMatch.index !== undefined) {
+      description = rest.substring(0, amountMatch.index).trim();
+    }
+
+    // Extract UGX values for fees and balance
+    const ugxValues: number[] = [];
+    const ugxRegex = /UGX\s+(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)/g;
+    let um;
+    while ((um = ugxRegex.exec(rest)) !== null) {
+      ugxValues.push(parseUGXAmount(um[1]));
+    }
+
+    const fees = ugxValues[0] || 0;
+    const balance = ugxValues[1] || 0;
+
+    // Extract from/to from description
+    let from = "", to = "";
+    const phoneNameMatch = description.match(/(\+256[\s\d]+?)\s+([A-Z][A-Z\s]+)/);
+    if (phoneNameMatch) {
+      const contactName = phoneNameMatch[2].trim();
+      if (type === "received") {
+        from = contactName;
+        to = accountHolder || "Self";
+      } else {
+        to = contactName;
+        from = accountHolder || "Self";
+      }
+    } else {
+      // Try just name extraction
+      const nameOnly = description.replace(/\+256[\s\d]+/g, "").trim();
+      if (nameOnly.length > 1) {
+        if (type === "received") {
+          from = nameOnly;
+          to = accountHolder || "Self";
+        } else {
+          to = nameOnly;
+          from = accountHolder || "Self";
+        }
+      }
+    }
+
+    // Convert "2 Jan 2026" to "02-01-2026"
+    const dateParts = start.date.match(/(\d{1,2})\s+(\w{3})\s+(\d{4})/);
+    let normalizedDate = start.date;
+    if (dateParts) {
+      const day = dateParts[1].padStart(2, '0');
+      const month = MONTH_MAP[dateParts[2]] || "01";
+      normalizedDate = `${day}-${month}-${dateParts[3]}`;
+    }
+
+    const category = categorize(description + " " + transactionType, transactionType, type);
+
+    transactions.push({
+      date: normalizedDate,
+      time: start.time,
+      transactionType,
+      description: description || transactionType,
+      transactionId,
+      from, to,
+      amount,
+      fees,
+      taxes: 0,
+      balance,
+      type,
+      category,
+    });
+  }
+
+  return transactions;
+}
+
 // ============ MTN MOMO PARSER ============
 
 function parseMTN(fullText: string, accountHolder: string): ParsedTransaction[] {
