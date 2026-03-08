@@ -30,7 +30,7 @@ const Footer = () => (
       </nav>
 
       <p className="text-xs text-muted">
-        © {new Date().getFullYear()} MoMoSense. Built for Uganda 🇺🇬
+        © {new Date().getFullYear()} MoMoSense.
       </p>
     </div>
   </footer>
