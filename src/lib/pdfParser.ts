@@ -286,38 +286,53 @@ function parseAirtel(fullText: string, accountHolder: string): ParsedTransaction
 }
 
 // ============ MTN MOMO PARSER ============
-// Format: DD-MM-YYYY HH:MM:SS | Type | Description | TxID | From | To | Amount | Fees | Taxes | Balance
 
 function parseMTN(fullText: string, accountHolder: string): ParsedTransaction[] {
   const transactions: ParsedTransaction[] = [];
 
-  // Skip header
-  const firstDateMatch = fullText.match(/\d{2}-\d{2}-\d{4}/);
-  const dataText = firstDateMatch
-    ? fullText.substring(fullText.indexOf(firstDateMatch[0]))
-    : fullText;
+  console.log("[MTN Parser] Full text length:", fullText.length);
+  console.log("[MTN Parser] First 500 chars:", fullText.substring(0, 500));
 
-  // Split by date+time
-  const txStartRegex = /(\d{2}-\d{2}-\d{4})\s+(\d{2}:\d{2}:\d{2})/g;
+  // Support multiple date formats: DD-MM-YYYY, DD/MM/YYYY, YYYY-MM-DD, YYYY/MM/DD
+  const txStartRegex = /(\d{2}[\/-]\d{2}[\/-]\d{4}|\d{4}[\/-]\d{2}[\/-]\d{2})\s+(\d{1,2}:\d{2}(?::\d{2})?(?:\s*[APap][Mm])?)/g;
+
   const starts: { index: number; date: string; time: string }[] = [];
   let match;
-  while ((match = txStartRegex.exec(dataText)) !== null) {
-    starts.push({ index: match.index, date: match[1], time: match[2] });
+  while ((match = txStartRegex.exec(fullText)) !== null) {
+    starts.push({ index: match.index, date: match[1], time: match[2].trim() });
+  }
+
+  console.log("[MTN Parser] Found date-time starts:", starts.length);
+  if (starts.length > 0) {
+    console.log("[MTN Parser] First match:", starts[0]);
+  }
+
+  // If no date+time found, try date-only pattern
+  if (starts.length === 0) {
+    const dateOnlyRegex = /(\d{2}[\/-]\d{2}[\/-]\d{4}|\d{4}[\/-]\d{2}[\/-]\d{2})/g;
+    while ((match = dateOnlyRegex.exec(fullText)) !== null) {
+      starts.push({ index: match.index, date: match[1], time: "" });
+    }
+    console.log("[MTN Parser] Date-only fallback found:", starts.length);
   }
 
   for (let i = 0; i < starts.length; i++) {
     const start = starts[i];
-    const end = i + 1 < starts.length ? starts[i + 1].index : dataText.length;
-    const block = dataText.substring(start.index, end);
+    const end = i + 1 < starts.length ? starts[i + 1].index : fullText.length;
+    const block = fullText.substring(start.index, end);
 
-    let rest = block.substring(start.date.length + 1 + start.time.length).trim();
+    // Remove the date+time prefix
+    const prefixLen = start.date.length + (start.time ? 1 + start.time.length : 0);
+    let rest = block.substring(prefixLen).trim();
 
     // Transaction Type
     let transactionType = "";
     const typePatterns = [
       "Cash Out", "Cash In", "Payment", "Incoming Transfer", "Outgoing Transfer",
       "Transfer", "Agent Commission", "Commission", "Reversal",
-      "Bill Payment", "Merchant Payment"
+      "Bill Payment", "Merchant Payment", "Deposit", "Withdrawal",
+      "Mobile Money", "Send Money", "Receive Money", "Buy Airtime",
+      "Pay Bill", "Third Party", "Interest Payout"
     ];
     for (const tp of typePatterns) {
       if (rest.toUpperCase().startsWith(tp.toUpperCase())) {
@@ -334,8 +349,8 @@ function parseMTN(fullText: string, accountHolder: string): ParsedTransaction[] 
       }
     }
 
-    // Transaction ID (MTN IDs start with 34 or 35)
-    const txIdMatch = rest.match(/\b(3[45]\d{9,10})\b/);
+    // Transaction ID - MTN IDs can vary (try multiple patterns)
+    const txIdMatch = rest.match(/\b(\d{10,15})\b/);
     const transactionId = txIdMatch ? txIdMatch[1] : "";
 
     let description = "";
@@ -343,7 +358,8 @@ function parseMTN(fullText: string, accountHolder: string): ParsedTransaction[] 
       description = rest.substring(0, txIdMatch.index).trim();
       rest = rest.substring(txIdMatch.index + txIdMatch[0].length).trim();
     } else {
-      const firstAmountIdx = rest.search(/\d{1,3}(?:,\d{3})+/);
+      // Find where amounts start
+      const firstAmountIdx = rest.search(/\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+\.\d{2}/);
       if (firstAmountIdx > 0) {
         description = rest.substring(0, firstAmountIdx).trim();
         rest = rest.substring(firstAmountIdx).trim();
@@ -363,9 +379,9 @@ function parseMTN(fullText: string, accountHolder: string): ParsedTransaction[] 
       from = description;
     }
 
-    // UGX amounts
+    // UGX amounts - support both comma-separated and plain decimals
     const ugxAmounts: number[] = [];
-    const amountRegex = /(\d{1,3}(?:,\d{3})*)/g;
+    const amountRegex = /(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?|\d+\.\d{2})/g;
     let amtMatch;
     while ((amtMatch = amountRegex.exec(rest)) !== null) {
       const val = parseUGXAmount(amtMatch[1]);
@@ -379,26 +395,39 @@ function parseMTN(fullText: string, accountHolder: string): ParsedTransaction[] 
 
     if (amount === 0 && fees === 0) continue;
 
+    // Normalize date to DD-MM-YYYY
+    let normalizedDate = start.date.replace(/\//g, "-");
+    // If YYYY-MM-DD format, convert to DD-MM-YYYY
+    if (/^\d{4}-/.test(normalizedDate)) {
+      const parts = normalizedDate.split("-");
+      normalizedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+
     // Direction
     const holderNorm = accountHolder.replace(/\s+/g, "").toUpperCase();
     const fromNorm = from.replace(/\s+/g, "").toUpperCase();
     const toNorm = to.replace(/\s+/g, "").toUpperCase();
     const typeLower = transactionType.toLowerCase();
+    const descLower = description.toLowerCase();
 
     let type: "sent" | "received" = "sent";
-    if (typeLower.includes("cash in")) type = "received";
-    else if (typeLower.includes("cash out") || typeLower.includes("payment")) type = "sent";
-    else if (holderNorm && toNorm.includes(holderNorm.substring(0, 6))) type = "received";
-    else if (holderNorm && fromNorm.includes(holderNorm.substring(0, 6))) type = "sent";
+    if (typeLower.includes("cash in") || typeLower.includes("incoming") || typeLower.includes("receive") || typeLower.includes("deposit")) type = "received";
+    else if (typeLower.includes("interest")) type = "received";
+    else if (typeLower.includes("cash out") || typeLower.includes("payment") || typeLower.includes("withdrawal") || typeLower.includes("send")) type = "sent";
+    else if (descLower.includes("received") || descLower.includes("from")) type = "received";
+    else if (descLower.includes("sent") || descLower.includes("paid")) type = "sent";
+    else if (holderNorm && holderNorm.length >= 6 && toNorm.includes(holderNorm.substring(0, 6))) type = "received";
+    else if (holderNorm && holderNorm.length >= 6 && fromNorm.includes(holderNorm.substring(0, 6))) type = "sent";
 
     const category = categorize(description, transactionType, type);
 
     transactions.push({
-      date: start.date, time: start.time, transactionType,
+      date: normalizedDate, time: start.time, transactionType,
       description: description || transactionType,
       transactionId, from, to, amount, fees, taxes, balance, type, category,
     });
   }
 
+  console.log("[MTN Parser] Parsed transactions:", transactions.length);
   return transactions;
 }
