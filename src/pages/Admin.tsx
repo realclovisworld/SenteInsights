@@ -22,13 +22,19 @@ const PAGE_TITLES: Record<AdminPage, string> = {
   settings: "Settings",
 };
 
-/** Check if the current Clerk user has admin role via publicMetadata */
+const ADMIN_EMAILS = ["paintingislife592@gmail.com"];
+
+/** Check if the current Clerk user has admin role via publicMetadata or is in the admin emails list */
 function useIsAdmin() {
   const { user, isLoaded: userLoaded } = useUser();
   const { isSignedIn, isLoaded: authLoaded } = useAuth();
 
   const isLoaded = userLoaded && authLoaded;
-  const isAdmin = isSignedIn && user?.publicMetadata?.role === "admin";
+  const email = user?.primaryEmailAddress?.emailAddress?.toLowerCase();
+  const isAdmin = isSignedIn && (
+    user?.publicMetadata?.role === "admin" ||
+    (!!email && ADMIN_EMAILS.includes(email))
+  );
 
   return { isLoaded, isSignedIn, isAdmin };
 }
