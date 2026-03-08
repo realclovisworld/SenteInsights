@@ -57,27 +57,31 @@ export function parseDateToISO(dateStr: string): string {
   if (!dateStr) return "";
   const s = dateStr.trim();
 
+  // Handle date+time by stripping time first (e.g. "31 Dec 2025 22:14")
+  const withTimeNamed = s.match(/^(.+?)\s+\d{1,2}:\d{2}(?::\d{2})?$/);
+  const normalizedInput = withTimeNamed ? withTimeNamed[1].trim() : s;
+
   // YYYY-MM-DD
-  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (iso) return s;
+  const iso = normalizedInput.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) return normalizedInput;
 
   // DD-MM-YYYY or DD/MM/YYYY
-  const dmy = s.match(/^(\d{2})[\/-](\d{2})[\/-](\d{4})$/);
+  const dmy = normalizedInput.match(/^(\d{2})[\/-](\d{2})[\/-](\d{4})$/);
   if (dmy) return `${dmy[3]}-${dmy[2]}-${dmy[1]}`;
 
   // DD-MM-YY
-  const dmy2 = s.match(/^(\d{2})[\/-](\d{2})[\/-](\d{2})$/);
+  const dmy2 = normalizedInput.match(/^(\d{2})[\/-](\d{2})[\/-](\d{2})$/);
   if (dmy2) return `20${dmy2[3]}-${dmy2[2]}-${dmy2[1]}`;
 
   // D MMM YYYY or DD MMM YYYY
-  const named = s.match(/^(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{4})$/i);
+  const named = normalizedInput.match(/^(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{4})$/i);
   if (named) {
     const day = named[1].padStart(2, "0");
     const month = MONTH_MAP[named[2].charAt(0).toUpperCase() + named[2].slice(1).toLowerCase()] || "01";
     return `${named[3]}-${month}-${day}`;
   }
 
-  return s;
+  return normalizedInput;
 }
 
 /**
