@@ -23,9 +23,10 @@ const PAGE_SIZE = 25;
 
 interface TransactionTableProps {
   transactions: ParsedTransaction[];
+  plan?: PlanId;
 }
 
-const TransactionTable = ({ transactions }: TransactionTableProps) => {
+const TransactionTable = ({ transactions, plan = "anonymous" }: TransactionTableProps) => {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [page, setPage] = useState(1);
