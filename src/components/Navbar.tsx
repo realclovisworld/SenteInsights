@@ -1,34 +1,30 @@
 import { Link, useLocation } from "react-router-dom";
 import { Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/react";
+import { SignInButton, SignUpButton, UserButton, useAuth } from "@clerk/react";
 
 const ClerkAuthButtons = () => {
+  const { isSignedIn, isLoaded } = useAuth();
+
+  if (!isLoaded) return null;
+
+  if (isSignedIn) {
+    return <UserButton />;
+  }
+
   return (
-    <Show
-      when={(has) => has({ permission: "*" })}
-      fallback={
-        <Show
-          when={() => true}
-          fallback={null}
-        >
-          <div className="flex items-center gap-2">
-            <SignInButton mode="modal">
-              <Button variant="ghost" size="sm" className="font-heading font-medium text-sm">
-                Sign In
-              </Button>
-            </SignInButton>
-            <SignUpButton mode="modal">
-              <Button variant="outline" size="sm" className="rounded-[10px] font-heading font-medium text-sm">
-                Sign Up
-              </Button>
-            </SignUpButton>
-          </div>
-        </Show>
-      }
-    >
-      <UserButton />
-    </Show>
+    <div className="flex items-center gap-2">
+      <SignInButton mode="modal">
+        <Button variant="ghost" size="sm" className="font-heading font-medium text-sm">
+          Sign In
+        </Button>
+      </SignInButton>
+      <SignUpButton mode="modal">
+        <Button variant="outline" size="sm" className="rounded-[10px] font-heading font-medium text-sm">
+          Sign Up
+        </Button>
+      </SignUpButton>
+    </div>
   );
 };
 
@@ -36,13 +32,7 @@ const Navbar = () => {
   const location = useLocation();
   const isLanding = location.pathname === "/";
 
-  let clerkAvailable = false;
-  try {
-    // Check if ClerkProvider is in the tree
-    clerkAvailable = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-  } catch {
-    clerkAvailable = false;
-  }
+  const clerkAvailable = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
   return (
     <>
