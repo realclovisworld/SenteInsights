@@ -13,7 +13,6 @@ const AIInsights = ({ transactions }: AIInsightsProps) => {
 
     const result: string[] = [];
 
-    // Top spending category
     const categoryTotals: Record<string, number> = {};
     const incomeSources: Record<string, number> = {};
     let totalOut = 0;
@@ -24,7 +23,7 @@ const AIInsights = ({ transactions }: AIInsightsProps) => {
         categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
         totalOut += t.amount;
       } else {
-        const sender = t.from?.trim() || t.description?.trim() || "Unknown";
+        const sender = t.accountName?.trim() || t.from?.trim() || t.description?.trim() || "Unknown";
         incomeSources[sender] = (incomeSources[sender] || 0) + t.amount;
       }
       totalFees += t.fees;
@@ -63,27 +62,29 @@ const AIInsights = ({ transactions }: AIInsightsProps) => {
       result.push(`You paid UGX ${totalFees.toLocaleString("en-UG")} in transaction fees. Consider consolidating transactions to reduce fees.`);
     }
 
-    // Monthly comparison if multiple months
+    // Monthly comparison - dates are YYYY-MM-DD
     const monthTotals: Record<string, number> = {};
     for (const t of transactions) {
       if (t.type === "sent") {
-        // date is DD-MM-YYYY
         const parts = t.date.split("-");
         if (parts.length === 3) {
-          const monthKey = `${parts[1]}-${parts[2]}`;
+          const monthKey = `${parts[0]}-${parts[1]}`; // YYYY-MM
           monthTotals[monthKey] = (monthTotals[monthKey] || 0) + t.amount;
         }
       }
     }
-    const months = Object.entries(monthTotals).sort();
-    if (months.length >= 2) {
+    const months = Object.entries(monthTotals).sort((a, b) => a[0].localeCompare(b[0])); // chronological sort
+    // Only compare if 3+ months to avoid misleading partial-month comparisons
+    if (months.length >= 3) {
       const [m1, a1] = months[months.length - 2];
       const [m2, a2] = months[months.length - 1];
       const change = a1 > 0 ? Math.round(((a2 - a1) / a1) * 100) : 0;
+      // Cap at 999% — anything higher indicates a parsing anomaly
+      const cappedChange = Math.min(Math.abs(change), 999);
       if (change > 0) {
-        result.push(`Spending increased by ${change}% from month ${m1} to ${m2}.`);
+        result.push(`Spending increased by ${cappedChange}% from ${m1} to ${m2}.`);
       } else if (change < 0) {
-        result.push(`Spending decreased by ${Math.abs(change)}% from month ${m1} to ${m2}.`);
+        result.push(`Spending decreased by ${cappedChange}% from ${m1} to ${m2}.`);
       }
     }
 

@@ -265,8 +265,9 @@ export async function fetchFullStatement(statementId: string): Promise<ParsedSta
   const incomingCount = transactions.filter(t => t.type === "received").length;
   const outgoingCount = transactions.filter(t => t.type === "sent").length;
 
-  const dateFrom = stmt.date_from ? (() => { const p = stmt.date_from.split("-"); return p[0].length === 4 ? `${p[2]}-${p[1]}-${p[0]}` : stmt.date_from; })() : "";
-  const dateTo = stmt.date_to ? (() => { const p = stmt.date_to.split("-"); return p[0].length === 4 ? `${p[2]}-${p[1]}-${p[0]}` : stmt.date_to; })() : "";
+  // Dates are YYYY-MM-DD in DB, keep as-is
+  const dateFrom = stmt.date_from || "";
+  const dateTo = stmt.date_to || "";
 
   return {
     transactions,

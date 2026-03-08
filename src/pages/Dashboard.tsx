@@ -422,7 +422,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <TransactionTable transactions={data.transactions} plan={userPlan} />
+        <TransactionTable transactions={data.transactions} plan={userPlan} accountHolder={data.accountHolder} dateRange={data.dateRange} />
 
         <FeatureGate plan={userPlan} feature="statementHistory" mode="blur" lockMessage="Statement history available on Starter plan and above">
           <StatementHistory onViewStatement={handleViewStatement} refreshKey={historyRefreshKey} userId={effectiveUserId} />
