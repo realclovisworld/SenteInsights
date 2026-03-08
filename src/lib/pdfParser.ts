@@ -91,14 +91,33 @@ function detectProvider(text: string): string {
 
 function detectAccountHolder(text: string): string {
   const patterns = [
-    /(?:Customer\s*Name|Account\s*Name|Subscriber\s*Name|Name)\s*[:\-]?\s*([A-Z][A-Za-z\s]+?)(?:\s*(?:Mobile|Phone|Email|Account|$|\d))/im,
+    /(?:Customer\s*Name|Account\s*Name|Subscriber\s*Name|Name)\s*[:\-]?\s*([A-Z][A-Za-z\s]{2,30}?)(?:\s*(?:Mobile|Phone|Email|Account|$|\d))/im,
     /(?:Statement\s+for|Subscriber)\s*[:\-]?\s*([A-Z][A-Z\s]{3,})/i,
   ];
   for (const p of patterns) {
     const m = text.match(p);
-    if (m) return m[1].trim();
+    if (m && m[1].trim().length > 1) return m[1].trim();
   }
   return "";
+}
+
+// Extract account holder from the most frequent "From" name in transactions
+function detectAccountHolderFromTransactions(transactions: ParsedTransaction[]): string {
+  const fromCounts: Record<string, number> = {};
+  for (const t of transactions) {
+    if (t.from && t.from.length > 1) {
+      fromCounts[t.from] = (fromCounts[t.from] || 0) + 1;
+    }
+  }
+  let best = "";
+  let bestCount = 0;
+  for (const [name, count] of Object.entries(fromCounts)) {
+    if (count > bestCount) {
+      best = name;
+      bestCount = count;
+    }
+  }
+  return best;
 }
 
 function detectPhoneNumber(text: string): string {
