@@ -320,18 +320,12 @@ function parseMTN(fullText: string, accountHolder: string): ParsedTransaction[] 
     starts.push({ index: match.index, date: match[1], time: match[2].trim() });
   }
 
-  console.log("[MTN Parser] Found date-time starts:", starts.length);
-  if (starts.length > 0) {
-    console.log("[MTN Parser] First match:", starts[0]);
-  }
-
   // If no date+time found, try date-only pattern
   if (starts.length === 0) {
     const dateOnlyRegex = /(\d{2}[\/-]\d{2}[\/-]\d{4}|\d{4}[\/-]\d{2}[\/-]\d{2})/g;
     while ((match = dateOnlyRegex.exec(fullText)) !== null) {
       starts.push({ index: match.index, date: match[1], time: "" });
     }
-    console.log("[MTN Parser] Date-only fallback found:", starts.length);
   }
 
   for (let i = 0; i < starts.length; i++) {
