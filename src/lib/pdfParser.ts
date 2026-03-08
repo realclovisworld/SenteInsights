@@ -185,9 +185,11 @@ export async function parsePDF(file: File): Promise<ParsedStatement> {
 
   if (provider === "Airtel Money") {
     transactions = parseAirtel(fullText, accountHolder);
+    if (transactions.length === 0) transactions = parseMTNNewFormat(fullText, accountHolder);
     if (transactions.length === 0) transactions = parseMTN(fullText, accountHolder);
   } else {
-    transactions = parseMTN(fullText, accountHolder);
+    transactions = parseMTNNewFormat(fullText, accountHolder);
+    if (transactions.length === 0) transactions = parseMTN(fullText, accountHolder);
     if (transactions.length === 0) transactions = parseAirtel(fullText, accountHolder);
   }
 
