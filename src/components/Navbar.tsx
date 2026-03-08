@@ -98,6 +98,20 @@ const Navbar = () => {
                 </Link>
               )
             )}
+            <Link
+              to="/login"
+              onClick={() => setMobileOpen(false)}
+              className="block px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted/20 transition-colors"
+            >
+              Log in
+            </Link>
+            <Link
+              to="/register"
+              onClick={() => setMobileOpen(false)}
+              className="block px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted/20 transition-colors"
+            >
+              Register
+            </Link>
             <Link to="/dashboard" onClick={() => setMobileOpen(false)} className="block mt-2">
               <Button className="w-full rounded-[10px] font-heading font-semibold text-sm">
                 Analyse My Statement
