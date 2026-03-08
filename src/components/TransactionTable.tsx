@@ -1,8 +1,10 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Search, Download, ChevronLeft, ChevronRight, Eye, EyeOff } from "lucide-react";
+import { Search, Download, ChevronLeft, ChevronRight, Eye, EyeOff, Lock, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { ParsedTransaction } from "@/lib/pdfParser";
+import { type PlanId, hasFeature, PLANS } from "@/lib/plans";
 
 const CATEGORY_COLORS: Record<string, string> = {
   "Airtime/Data": "bg-chart-red/15 text-chart-red",
