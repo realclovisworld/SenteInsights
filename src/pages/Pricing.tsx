@@ -137,6 +137,11 @@ function formatUGX(amount: number): string {
 const Pricing = () => {
   const [annual, setAnnual] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [paymentModal, setPaymentModal] = useState<{ open: boolean; plan: string; amount: number; period: "month" | "year" } | null>(null);
+
+  const openPayment = (plan: string, amount: number) => {
+    setPaymentModal({ open: true, plan, amount, period: annual ? "year" : "month" });
+  };
 
   return (
     <div className="min-h-screen bg-background">
