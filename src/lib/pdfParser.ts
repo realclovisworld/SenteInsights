@@ -82,8 +82,6 @@ function detectProvider(text: string): string {
 
   if (hasMTNMarkers) return "MTN MoMo";
   if (hasAirtelMarkers) return "Airtel Money";
-  if (lower.includes("equity")) return "Equity Bank";
-  if (lower.includes("stanbic")) return "Stanbic Bank";
   return "Unknown";
 }
 
