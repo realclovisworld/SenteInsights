@@ -1,73 +1,122 @@
-# Welcome to your Lovable project
+# MoMoSense Insights
 
-## Project info
+**MoMoSense Insights** is a web application that parses mobile money PDF statements from MTN MoMo and Airtel Money (Uganda), extracts transactions, and provides visual spending insights, AI-generated summaries, and exportable reports.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+---
 
-## How can I edit this code?
+## Features
 
-There are several ways of editing your application.
+- 📄 **PDF parsing** — Upload MTN MoMo or Airtel Money statements; transactions are extracted client-side.
+- 📊 **Visual insights** — Spending charts, monthly trends, income sources, and stat cards.
+- 🤖 **AI insights** — Auto-generated text summaries of spending patterns.
+- 🗂️ **Statement history** — Saved statements and transactions persisted to Supabase.
+- 🔒 **Authentication** — Clerk-powered sign-in / sign-up.
+- 📦 **Plan-based gating** — Free, Starter, Pro, Business, and Enterprise tiers with per-page limits and feature flags.
+- 🛡️ **Admin panel** — User management, payment request approval, and settings.
 
-**Use Lovable**
+---
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## Tech Stack
 
-Changes made via Lovable will be committed automatically to this repo.
+| Layer | Technology |
+|---|---|
+| UI Framework | React 18 + TypeScript |
+| Build Tool | Vite |
+| Styling | Tailwind CSS + shadcn/ui |
+| Authentication | Clerk |
+| Database | Supabase (PostgreSQL + RLS) |
+| State Management | TanStack Query (React Query) |
+| Routing | React Router DOM |
+| PDF Parsing | pdfjs-dist (client-side) |
+| Testing | Vitest + React Testing Library |
 
-**Use your preferred IDE**
+---
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Quick Start
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+```bash
+# 1. Clone the repository
+git clone https://github.com/gideon-tech/momosense-insights.git
+cd momosense-insights
 
-Follow these steps:
+# 2. Install dependencies
+npm install
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# 3. Configure environment variables
+cp .env.example .env
+# Edit .env with your Supabase and Clerk credentials
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# 4. Start the development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Open `http://localhost:5173` in your browser.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+---
 
-**Use GitHub Codespaces**
+## Environment Variables
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Copy `.env.example` to `.env` and fill in the values:
 
-## What technologies are used for this project?
+```env
+VITE_SUPABASE_PROJECT_ID=your_project_ref
+VITE_SUPABASE_URL=https://your_project_ref.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_anon_key
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
+```
 
-This project is built with:
+> ⚠️ Never commit `.env`. It is listed in `.gitignore`.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+---
 
-## How can I deploy this project?
+## Scripts
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+| Command | Description |
+|---|---|
+| `npm run dev` | Start development server |
+| `npm run build` | Production build (output: `dist/`) |
+| `npm run preview` | Preview production build locally |
+| `npm run lint` | Run ESLint |
+| `npm run test` | Run tests once |
+| `npm run test:watch` | Run tests in watch mode |
 
-## Can I connect a custom domain to my Lovable project?
+---
 
-Yes, you can!
+## Project Structure
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+```
+src/
+├── main.tsx                    # Entry point — mounts ClerkProvider
+├── App.tsx                     # Router + top-level providers
+├── pages/                      # One file per route
+├── components/                 # Reusable UI components
+│   ├── ui/                    # shadcn/ui primitives
+│   └── admin/                 # Admin-specific components
+├── lib/
+│   ├── pdfParser.ts           # PDF → transaction extraction
+│   ├── supabase-helpers.ts    # DB read/write helpers
+│   ├── admin-helpers.ts       # Admin dashboard queries
+│   └── plans.ts               # Plan definitions & feature gating
+├── hooks/                      # Custom React hooks
+└── integrations/
+    └── supabase/
+        ├── client.ts          # Supabase JS client
+        └── types.ts           # Generated database types
+```
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+---
+
+## Documentation
+
+- [Developer Guide](docs/DEVELOPERS.md) — Local setup, env vars, core flows, troubleshooting
+- [Architecture](docs/ARCHITECTURE.md) — Technical architecture and key modules
+- [Supabase Reference](docs/SUPABASE.md) — Database tables, RLS, and generated types
+- [Contributing](docs/CONTRIBUTING.md) — Branching, code style, and PR guidelines
+
+---
+
+## Deployment
+
+The app is deployed via [Lovable](https://lovable.dev/). Push to the connected branch to trigger a build and deploy.
+
+Ensure all environment variables (`VITE_SUPABASE_*`, `VITE_CLERK_PUBLISHABLE_KEY`) are configured in the hosting environment.
