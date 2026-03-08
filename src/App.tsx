@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { ClerkProvider } from "@clerk/react";
+import { Component, type ReactNode } from "react";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Converter from "./pages/Converter";
@@ -19,10 +19,47 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+// Error boundary to prevent white screens
+class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error("[MoMoSense] App error:", error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: "2rem", fontFamily: "system-ui, sans-serif", maxWidth: 600, margin: "4rem auto" }}>
+          <h1 style={{ color: "#b91c1c", fontSize: "1.5rem", marginBottom: "1rem" }}>Something went wrong</h1>
+          <p style={{ color: "#374151", marginBottom: "1rem" }}>
+            The app encountered an error. Please try refreshing the page.
+          </p>
+          <pre style={{ background: "#f3f4f6", padding: "1rem", borderRadius: 8, fontSize: "0.85rem", overflow: "auto", color: "#991b1b" }}>
+            {this.state.error?.message}
+          </pre>
+          <button
+            onClick={() => window.location.reload()}
+            style={{ marginTop: "1rem", padding: "0.5rem 1rem", background: "#166534", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer" }}
+          >
+            Reload Page
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const App = () => (
-  <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
+  <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
@@ -45,7 +82,7 @@ const App = () => (
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
-  </ClerkProvider>
+  </ErrorBoundary>
 );
 
 export default App;
