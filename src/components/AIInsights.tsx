@@ -9,7 +9,7 @@ interface AIInsightsProps {
 
 const AIInsights = ({ transactions }: AIInsightsProps) => {
   const insights = useMemo(() => {
-    if (transactions.length === 0) return [];
+    if (!transactions || transactions.length === 0) return [];
 
     const result: string[] = [];
 
