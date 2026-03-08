@@ -82,6 +82,8 @@ const Dashboard = () => {
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState("");
+  const [batchItems, setBatchItems] = useState<BatchFileItem[]>([]);
+  const [upgradeMessage, setUpgradeMessage] = useState("");
 
   // Profile state for plan & usage
   const [userPlan, setUserPlan] = useState<PlanId>("anonymous");
