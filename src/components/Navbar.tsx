@@ -14,12 +14,9 @@ const Navbar = () => {
     ...(isLanding
       ? [
           { href: "#features", label: "Features", isAnchor: true },
-          { href: "#how-it-works", label: "How it Works", isAnchor: true },
-          { href: "#privacy", label: "Privacy", isAnchor: true },
         ]
       : []),
     { href: "/pricing", label: "Pricing", isAnchor: false },
-    { href: "/converter", label: "PDF to CSV", isAnchor: false },
   ];
 
   return (
