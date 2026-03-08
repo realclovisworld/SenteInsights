@@ -8,23 +8,44 @@ import MonthlyTrend from "@/components/MonthlyTrend";
 import SavingsGoal from "@/components/SavingsGoal";
 import AIInsights from "@/components/AIInsights";
 import TransactionTable from "@/components/TransactionTable";
+import IncomeSourcesChart from "@/components/IncomeSourcesChart";
+import { parsePDF, type ParsedStatement } from "@/lib/pdfParser";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 
 const Dashboard = () => {
-  const [hasData, setHasData] = useState(false);
+  const [data, setData] = useState<ParsedStatement | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState("");
 
-  const handleUpload = async (_file: File) => {
+  const handleUpload = async (file: File) => {
     setLoading(true);
-    setLoadingStep("Reading statement…");
-    await new Promise((r) => setTimeout(r, 1200));
-    setLoadingStep("Categorizing transactions…");
-    await new Promise((r) => setTimeout(r, 1000));
-    setLoadingStep("Generating insights…");
-    await new Promise((r) => setTimeout(r, 800));
-    setLoading(false);
-    setHasData(true);
+    try {
+      setLoadingStep("Reading statement…");
+      await new Promise((r) => setTimeout(r, 500));
+
+      setLoadingStep("Extracting all pages…");
+      const result = await parsePDF(file);
+
+      setLoadingStep("Categorizing transactions…");
+      await new Promise((r) => setTimeout(r, 400));
+
+      if (result.transactions.length === 0) {
+        toast.error("No transactions found in this PDF. Please check the format.");
+        setLoading(false);
+        return;
+      }
+
+      setLoadingStep(`Found ${result.transactions.length} transactions!`);
+      await new Promise((r) => setTimeout(r, 400));
+
+      setData(result);
+    } catch (err) {
+      console.error("PDF parsing error:", err);
+      toast.error("Failed to parse PDF. Please try a different file.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) {
@@ -55,7 +76,7 @@ const Dashboard = () => {
     );
   }
 
-  if (!hasData) {
+  if (!data) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
@@ -79,25 +100,45 @@ const Dashboard = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container mx-auto px-4 py-8 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            {data.accountHolder && (
+              <p className="text-sm text-muted">Statement for <span className="font-semibold text-foreground">{data.accountHolder}</span></p>
+            )}
+            <p className="text-xs text-muted">Provider: {data.provider} · {data.transactions.length} transactions</p>
+          </div>
+          <button
+            onClick={() => setData(null)}
+            className="text-sm text-primary hover:underline"
+          >
+            Upload new statement
+          </button>
+        </div>
+
         <StatCards
-          totalIn={5250000}
-          totalOut={3700000}
-          netBalance={1550000}
-          totalTransactions={12}
+          totalIn={data.totalIn}
+          totalOut={data.totalOut}
+          netBalance={data.netBalance}
+          totalTransactions={data.transactions.length}
+          totalFees={data.totalFees}
+          totalTaxes={data.totalTaxes}
+          incomingCount={data.incomingCount}
+          outgoingCount={data.outgoingCount}
         />
 
         <div className="grid lg:grid-cols-2 gap-6">
           <div className="space-y-6">
-            <SpendingChart />
-            <SavingsGoal netBalance={1550000} />
+            <SpendingChart transactions={data.transactions} />
+            <SavingsGoal netBalance={data.netBalance} />
           </div>
           <div className="space-y-6">
-            <MonthlyTrend />
+            <MonthlyTrend transactions={data.transactions} />
+            <IncomeSourcesChart transactions={data.transactions} />
             <AIInsights />
           </div>
         </div>
 
-        <TransactionTable />
+        <TransactionTable transactions={data.transactions} />
       </div>
       <Footer />
     </div>

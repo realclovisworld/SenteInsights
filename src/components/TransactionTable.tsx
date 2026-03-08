@@ -1,15 +1,8 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Search, Download } from "lucide-react";
+import { Search, Download, ChevronLeft, ChevronRight, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-export interface Transaction {
-  date: string;
-  description: string;
-  type: "sent" | "received";
-  amount: number;
-  category: string;
-}
+import type { ParsedTransaction } from "@/lib/pdfParser";
 
 const CATEGORY_COLORS: Record<string, string> = {
   Food: "bg-chart-green/15 text-chart-green",
@@ -21,42 +14,43 @@ const CATEGORY_COLORS: Record<string, string> = {
   Entertainment: "bg-chart-yellow/15 text-chart-yellow",
 };
 
-const MOCK_TRANSACTIONS: Transaction[] = [
-  { date: "2024-03-15", description: "MTN MoMo - Jumia Food", type: "sent", amount: 35000, category: "Food" },
-  { date: "2024-03-15", description: "Salary Deposit", type: "received", amount: 2500000, category: "Other" },
-  { date: "2024-03-14", description: "SafeBoda Ride", type: "sent", amount: 8000, category: "Transport" },
-  { date: "2024-03-14", description: "UMEME Electricity", type: "sent", amount: 120000, category: "Bills" },
-  { date: "2024-03-13", description: "Airtime Purchase", type: "sent", amount: 20000, category: "Airtime" },
-  { date: "2024-03-13", description: "Freelance Payment", type: "received", amount: 450000, category: "Other" },
-  { date: "2024-03-12", description: "Savings Transfer", type: "sent", amount: 150000, category: "Savings" },
-  { date: "2024-03-12", description: "Rolex Stand", type: "sent", amount: 5000, category: "Food" },
-  { date: "2024-03-11", description: "Bolt Ride to Kampala", type: "sent", amount: 25000, category: "Transport" },
-  { date: "2024-03-11", description: "DSTV Subscription", type: "sent", amount: 89000, category: "Entertainment" },
-  { date: "2024-03-10", description: "MTN Data Bundle", type: "sent", amount: 30000, category: "Airtime" },
-  { date: "2024-03-10", description: "Family Support Received", type: "received", amount: 300000, category: "Other" },
-];
+const PAGE_SIZE = 25;
 
 interface TransactionTableProps {
-  transactions?: Transaction[];
+  transactions: ParsedTransaction[];
 }
 
-const TransactionTable = ({ transactions = MOCK_TRANSACTIONS }: TransactionTableProps) => {
+const TransactionTable = ({ transactions }: TransactionTableProps) => {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
+  const [page, setPage] = useState(1);
+  const [showExtraCols, setShowExtraCols] = useState(false);
 
   const categories = useMemo(() => ["All", ...new Set(transactions.map((t) => t.category))], [transactions]);
 
   const filtered = useMemo(() => {
     return transactions.filter((t) => {
-      const matchSearch = t.description.toLowerCase().includes(search.toLowerCase());
+      const matchSearch = t.description.toLowerCase().includes(search.toLowerCase()) ||
+        t.from?.toLowerCase().includes(search.toLowerCase()) ||
+        t.to?.toLowerCase().includes(search.toLowerCase());
       const matchCategory = categoryFilter === "All" || t.category === categoryFilter;
       return matchSearch && matchCategory;
     });
   }, [transactions, search, categoryFilter]);
 
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  // Reset page when filter changes
+  useMemo(() => setPage(1), [search, categoryFilter]);
+
   const exportCSV = () => {
-    const header = "Date,Description,Type,Amount (UGX),Category\n";
-    const rows = filtered.map((t) => `${t.date},"${t.description}",${t.type},${t.amount},${t.category}`).join("\n");
+    const header = "Date,Time,Description,Transaction ID,From,To,Amount(UGX),Fees(UGX),Taxes(UGX),Balance(UGX),Type,Category\n";
+    const rows = filtered
+      .map((t) =>
+        `${t.date},"${t.time}","${t.description}","${t.transactionId}","${t.from}","${t.to}",${t.amount},${t.fees},${t.taxes},${t.balance},${t.type},${t.category}`
+      )
+      .join("\n");
     const blob = new Blob([header + rows], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -74,7 +68,10 @@ const TransactionTable = ({ transactions = MOCK_TRANSACTIONS }: TransactionTable
       className="stat-card"
     >
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <h3 className="font-heading font-semibold text-foreground">All Transactions</h3>
+        <div>
+          <h3 className="font-heading font-semibold text-foreground">All Transactions</h3>
+          <p className="text-xs text-muted mt-1">{filtered.length} transactions found</p>
+        </div>
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
@@ -95,6 +92,15 @@ const TransactionTable = ({ transactions = MOCK_TRANSACTIONS }: TransactionTable
               <option key={c} value={c}>{c}</option>
             ))}
           </select>
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-[10px] gap-2"
+            onClick={() => setShowExtraCols(!showExtraCols)}
+          >
+            {showExtraCols ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            {showExtraCols ? "Hide" : "Show"} Fees/Taxes
+          </Button>
           <Button variant="outline" size="sm" className="rounded-[10px] gap-2" onClick={exportCSV}>
             <Download className="w-4 h-4" />
             Export CSV
@@ -110,14 +116,21 @@ const TransactionTable = ({ transactions = MOCK_TRANSACTIONS }: TransactionTable
               <th className="text-left py-3 px-2 text-xs font-medium text-muted">Description</th>
               <th className="text-left py-3 px-2 text-xs font-medium text-muted">Type</th>
               <th className="text-right py-3 px-2 text-xs font-medium text-muted">Amount</th>
+              {showExtraCols && (
+                <>
+                  <th className="text-right py-3 px-2 text-xs font-medium text-muted">Fees</th>
+                  <th className="text-right py-3 px-2 text-xs font-medium text-muted">Taxes</th>
+                  <th className="text-right py-3 px-2 text-xs font-medium text-muted">Balance</th>
+                </>
+              )}
               <th className="text-left py-3 px-2 text-xs font-medium text-muted">Category</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.map((t, i) => (
+            {paginated.map((t, i) => (
               <tr key={i} className={`border-b border-border last:border-0 ${i % 2 === 1 ? "bg-background" : ""}`}>
-                <td className="py-3 px-2 font-mono text-xs">{t.date}</td>
-                <td className="py-3 px-2">{t.description}</td>
+                <td className="py-3 px-2 font-mono text-xs whitespace-nowrap">{t.date}</td>
+                <td className="py-3 px-2 max-w-[200px] truncate" title={t.description}>{t.description}</td>
                 <td className="py-3 px-2">
                   <span className={`text-xs font-medium ${t.type === "received" ? "text-chart-green" : "text-chart-red"}`}>
                     {t.type === "received" ? "Received" : "Sent"}
@@ -126,6 +139,19 @@ const TransactionTable = ({ transactions = MOCK_TRANSACTIONS }: TransactionTable
                 <td className={`py-3 px-2 text-right font-mono font-medium ${t.type === "received" ? "text-chart-green" : "text-chart-red"}`}>
                   {t.type === "received" ? "+" : "-"}UGX {t.amount.toLocaleString("en-UG")}
                 </td>
+                {showExtraCols && (
+                  <>
+                    <td className="py-3 px-2 text-right font-mono text-xs text-accent">
+                      {t.fees > 0 ? `UGX ${t.fees.toLocaleString("en-UG")}` : "—"}
+                    </td>
+                    <td className="py-3 px-2 text-right font-mono text-xs text-muted">
+                      {t.taxes > 0 ? `UGX ${t.taxes.toLocaleString("en-UG")}` : "—"}
+                    </td>
+                    <td className="py-3 px-2 text-right font-mono text-xs">
+                      UGX {t.balance.toLocaleString("en-UG")}
+                    </td>
+                  </>
+                )}
                 <td className="py-3 px-2">
                   <span className={`category-pill ${CATEGORY_COLORS[t.category] || CATEGORY_COLORS.Other}`}>
                     {t.category}
@@ -136,6 +162,51 @@ const TransactionTable = ({ transactions = MOCK_TRANSACTIONS }: TransactionTable
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
+          <p className="text-xs text-muted">
+            Page {page} of {totalPages}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-[10px]"
+              disabled={page <= 1}
+              onClick={() => setPage(page - 1)}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              const start = Math.max(1, Math.min(page - 2, totalPages - 4));
+              const p = start + i;
+              if (p > totalPages) return null;
+              return (
+                <Button
+                  key={p}
+                  variant={p === page ? "default" : "outline"}
+                  size="sm"
+                  className="rounded-[10px] w-8 h-8 p-0"
+                  onClick={() => setPage(p)}
+                >
+                  {p}
+                </Button>
+              );
+            })}
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-[10px]"
+              disabled={page >= totalPages}
+              onClick={() => setPage(page + 1)}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 };
