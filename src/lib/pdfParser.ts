@@ -440,6 +440,5 @@ function parseMTN(fullText: string, accountHolder: string): ParsedTransaction[] 
     });
   }
 
-  console.log("[MTN Parser] Parsed transactions:", transactions.length);
   return transactions;
 }
