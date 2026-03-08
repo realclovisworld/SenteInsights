@@ -21,10 +21,9 @@ const ProviderLogos = () => {
           {providers.map((p) => (
             <div
               key={p.name}
-              className={`${p.bg} px-6 py-3 rounded-xl shadow-sm flex items-center gap-3 border border-border`}
+              className={`${p.bg} px-5 py-3 rounded-xl shadow-sm border border-border`}
             >
               <img src={p.logo} alt={p.name} className="h-8 w-auto" />
-              <span className="text-sm font-semibold font-heading text-foreground">{p.name}</span>
             </div>
           ))}
         </div>
