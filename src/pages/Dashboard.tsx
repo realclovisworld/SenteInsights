@@ -12,6 +12,8 @@ import IncomeSourcesChart from "@/components/IncomeSourcesChart";
 import { parsePDF, type ParsedStatement } from "@/lib/pdfParser";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertTriangle } from "lucide-react";
 
 const Dashboard = () => {
   const [data, setData] = useState<ParsedStatement | null>(null);
@@ -100,12 +102,24 @@ const Dashboard = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container mx-auto px-4 py-8 space-y-6">
+        {/* Validation error banner */}
+        {data.validationError && (
+          <Alert variant="destructive" className="border-destructive bg-destructive/10">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Parsing Warning</AlertTitle>
+            <AlertDescription>{data.validationError}</AlertDescription>
+          </Alert>
+        )}
+
         <div className="flex items-center justify-between">
           <div>
             {data.accountHolder && (
               <p className="text-sm text-muted">Statement for <span className="font-semibold text-foreground">{data.accountHolder}</span></p>
             )}
-            <p className="text-xs text-muted">Provider: {data.provider} · {data.transactions.length} transactions</p>
+            <p className="text-xs text-muted">
+              Provider: {data.provider} · {data.transactions.length} transactions
+              {data.dateRange.from && ` · ${data.dateRange.from} to ${data.dateRange.to}`}
+            </p>
           </div>
           <button
             onClick={() => setData(null)}
@@ -134,7 +148,7 @@ const Dashboard = () => {
           <div className="space-y-6">
             <MonthlyTrend transactions={data.transactions} />
             <IncomeSourcesChart transactions={data.transactions} />
-            <AIInsights />
+            <AIInsights transactions={data.transactions} />
           </div>
         </div>
 

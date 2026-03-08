@@ -5,13 +5,16 @@ import { Button } from "@/components/ui/button";
 import type { ParsedTransaction } from "@/lib/pdfParser";
 
 const CATEGORY_COLORS: Record<string, string> = {
+  "Airtime/Data": "bg-chart-red/15 text-chart-red",
+  Utilities: "bg-chart-blue/15 text-chart-blue",
+  "Bank Payment": "bg-chart-purple/15 text-chart-purple",
   Food: "bg-chart-green/15 text-chart-green",
-  Transport: "bg-chart-yellow/15 text-chart-yellow",
-  Bills: "bg-chart-blue/15 text-chart-blue",
-  Airtime: "bg-chart-red/15 text-chart-red",
-  Savings: "bg-chart-purple/15 text-chart-purple",
+  "Cash Withdrawal": "bg-chart-yellow/15 text-chart-yellow",
+  "Forex/Exchange": "bg-chart-blue/15 text-chart-blue",
+  "Interest Earned": "bg-chart-green/15 text-chart-green",
+  Remittance: "bg-chart-purple/15 text-chart-purple",
+  "Transfer Received": "bg-chart-green/15 text-chart-green",
   Other: "bg-muted/15 text-muted",
-  Entertainment: "bg-chart-yellow/15 text-chart-yellow",
 };
 
 const PAGE_SIZE = 25;
