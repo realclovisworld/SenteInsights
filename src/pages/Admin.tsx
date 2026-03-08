@@ -29,7 +29,7 @@ const Admin = () => {
   const [loading, setLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const adminPassword = "Maku@0267!";
+  const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD || "admin123";
 
   const handleLogin = () => {
     if (password === adminPassword) {
