@@ -61,8 +61,27 @@ function categorize(description: string, transactionType: string, direction: "se
 
 function detectProvider(text: string): string {
   const lower = text.toLowerCase();
-  if (lower.includes("airtel")) return "Airtel Money";
-  if (lower.includes("mtn") || lower.includes("mobile money") || lower.includes("momo")) return "MTN MoMo";
+
+  // Strong MTN indicators first (to avoid false Airtel matches from merchant names like "Payment for Airtel")
+  const hasMTNMarkers =
+    lower.includes("mtn") ||
+    lower.includes("mobile money") ||
+    lower.includes("momo") ||
+    lower.includes("transaction id") ||
+    lower.includes("amount(ugx)") ||
+    lower.includes("fees(ugx)") ||
+    lower.includes("taxes(ugx)") ||
+    lower.includes("balance(ugx)");
+
+  // Airtel parser-specific markers
+  const hasAirtelMarkers =
+    lower.includes("airtel money") ||
+    lower.includes("transaction successful") ||
+    lower.includes(" credit ") ||
+    lower.includes(" debit ");
+
+  if (hasMTNMarkers) return "MTN MoMo";
+  if (hasAirtelMarkers) return "Airtel Money";
   if (lower.includes("equity")) return "Equity Bank";
   if (lower.includes("stanbic")) return "Stanbic Bank";
   return "Unknown";
