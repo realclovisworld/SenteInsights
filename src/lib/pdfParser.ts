@@ -193,6 +193,11 @@ export async function parsePDF(file: File): Promise<ParsedStatement> {
     if (transactions.length === 0) transactions = parseAirtel(fullText, accountHolder);
   }
 
+  // Fallback: extract account holder from most frequent "From" name in transactions
+  if (!accountHolder && transactions.length > 0) {
+    accountHolder = detectAccountHolderFromTransactions(transactions);
+  }
+
   // Compute totals
   let totalIn = 0, totalOut = 0, totalFees = 0, totalTaxes = 0;
   let incomingCount = 0, outgoingCount = 0;
@@ -211,7 +216,7 @@ export async function parsePDF(file: File): Promise<ParsedStatement> {
 
   const dates = transactions.map(t => t.date);
   const dateRange = { from: dates[0] || "", to: dates[dates.length - 1] || "" };
-  const resolvedPeriod = statementPeriod || (dateRange.from && dateRange.to ? `${dateRange.from} to ${dateRange.to}` : "");
+  const resolvedPeriod = statementPeriod || statementDate || (dateRange.from && dateRange.to ? `${dateRange.from} to ${dateRange.to}` : "");
 
   let validationError: string | undefined;
   if (pdf.numPages > 1 && transactions.length < 10) {
