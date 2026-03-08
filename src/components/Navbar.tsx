@@ -24,6 +24,7 @@ const Navbar = () => {
                 <a href="#privacy" className="text-sm font-medium text-muted hover:text-foreground transition-colors">Privacy</a>
               </>
             )}
+            <Link to="/pricing" className="text-sm font-medium text-muted hover:text-foreground transition-colors">Pricing</Link>
             <Link to="/converter" className="text-sm font-medium text-muted hover:text-foreground transition-colors">PDF to CSV</Link>
           </div>
 
