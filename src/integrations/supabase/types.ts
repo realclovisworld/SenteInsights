@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_settings: {
+        Row: {
+          key: string
+          updated_at: string | null
+          value: string | null
+        }
+        Insert: {
+          key: string
+          updated_at?: string | null
+          value?: string | null
+        }
+        Update: {
+          key?: string
+          updated_at?: string | null
+          value?: string | null
+        }
+        Relationships: []
+      }
       insights: {
         Row: {
           generated_at: string | null
@@ -87,10 +105,13 @@ export type Database = {
       }
       profiles: {
         Row: {
+          ban_reason: string | null
+          banned_at: string | null
           created_at: string | null
           email: string | null
           full_name: string | null
           id: string
+          is_banned: boolean | null
           last_reset_date: string | null
           pages_limit_month: number | null
           pages_used_month: number | null
@@ -99,10 +120,13 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          ban_reason?: string | null
+          banned_at?: string | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
+          is_banned?: boolean | null
           last_reset_date?: string | null
           pages_limit_month?: number | null
           pages_used_month?: number | null
@@ -111,10 +135,13 @@ export type Database = {
           user_id: string
         }
         Update: {
+          ban_reason?: string | null
+          banned_at?: string | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
+          is_banned?: boolean | null
           last_reset_date?: string | null
           pages_limit_month?: number | null
           pages_used_month?: number | null
