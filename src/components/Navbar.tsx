@@ -1,10 +1,22 @@
 import { Link, useLocation } from "react-router-dom";
 import { Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SignInButton, SignUpButton, UserButton, useAuth } from "@clerk/clerk-react";
 
 const Navbar = () => {
   const location = useLocation();
   const isLanding = location.pathname === "/";
+
+  let isSignedIn = false;
+  let clerkLoaded = false;
+  try {
+    const auth = useAuth();
+    isSignedIn = !!auth.isSignedIn;
+    clerkLoaded = auth.isLoaded;
+  } catch {
+    // Clerk not available (no provider), auth disabled
+    clerkLoaded = true;
+  }
 
   return (
     <>
@@ -28,11 +40,32 @@ const Navbar = () => {
             <Link to="/converter" className="text-sm font-medium text-muted hover:text-foreground transition-colors">PDF to CSV</Link>
           </div>
 
-          <Link to="/dashboard">
-            <Button className="rounded-[10px] font-heading font-semibold text-sm">
-              Analyse My Statement
-            </Button>
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link to="/dashboard">
+              <Button className="rounded-[10px] font-heading font-semibold text-sm">
+                Analyse My Statement
+              </Button>
+            </Link>
+
+            {clerkLoaded && (
+              isSignedIn ? (
+                <UserButton afterSignOutUrl="/" />
+              ) : (
+                <div className="flex items-center gap-2">
+                  <SignInButton mode="modal">
+                    <Button variant="ghost" size="sm" className="font-heading font-medium text-sm">
+                      Sign In
+                    </Button>
+                  </SignInButton>
+                  <SignUpButton mode="modal">
+                    <Button variant="outline" size="sm" className="rounded-[10px] font-heading font-medium text-sm">
+                      Sign Up
+                    </Button>
+                  </SignUpButton>
+                </div>
+              )
+            )}
+          </div>
         </div>
       </nav>
     </>
