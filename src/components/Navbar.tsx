@@ -1,21 +1,47 @@
 import { Link, useLocation } from "react-router-dom";
 import { Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SignInButton, SignUpButton, UserButton, useAuth } from "@clerk/clerk-react";
+import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/react";
+
+const ClerkAuthButtons = () => {
+  return (
+    <Show
+      when={(has) => has({ permission: "*" })}
+      fallback={
+        <Show
+          when={() => true}
+          fallback={null}
+        >
+          <div className="flex items-center gap-2">
+            <SignInButton mode="modal">
+              <Button variant="ghost" size="sm" className="font-heading font-medium text-sm">
+                Sign In
+              </Button>
+            </SignInButton>
+            <SignUpButton mode="modal">
+              <Button variant="outline" size="sm" className="rounded-[10px] font-heading font-medium text-sm">
+                Sign Up
+              </Button>
+            </SignUpButton>
+          </div>
+        </Show>
+      }
+    >
+      <UserButton />
+    </Show>
+  );
+};
 
 const Navbar = () => {
   const location = useLocation();
   const isLanding = location.pathname === "/";
 
-  let isSignedIn = false;
-  let clerkLoaded = false;
+  let clerkAvailable = false;
   try {
-    const auth = useAuth();
-    isSignedIn = !!auth.isSignedIn;
-    clerkLoaded = auth.isLoaded;
+    // Check if ClerkProvider is in the tree
+    clerkAvailable = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
   } catch {
-    // Clerk not available (no provider), auth disabled
-    clerkLoaded = true;
+    clerkAvailable = false;
   }
 
   return (
@@ -47,24 +73,7 @@ const Navbar = () => {
               </Button>
             </Link>
 
-            {clerkLoaded && (
-              isSignedIn ? (
-                <UserButton afterSignOutUrl="/" />
-              ) : (
-                <div className="flex items-center gap-2">
-                  <SignInButton mode="modal">
-                    <Button variant="ghost" size="sm" className="font-heading font-medium text-sm">
-                      Sign In
-                    </Button>
-                  </SignInButton>
-                  <SignUpButton mode="modal">
-                    <Button variant="outline" size="sm" className="rounded-[10px] font-heading font-medium text-sm">
-                      Sign Up
-                    </Button>
-                  </SignUpButton>
-                </div>
-              )
-            )}
+            {clerkAvailable && <ClerkAuthButtons />}
           </div>
         </div>
       </nav>

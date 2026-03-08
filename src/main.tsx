@@ -3,8 +3,17 @@ import { ClerkProvider } from "@clerk/react";
 import App from "./App.tsx";
 import "./index.css";
 
-createRoot(document.getElementById("root")!).render(
-  <ClerkProvider afterSignOutUrl="/">
-    <App />
-  </ClerkProvider>
-);
+const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+
+const root = createRoot(document.getElementById("root")!);
+
+if (PUBLISHABLE_KEY) {
+  root.render(
+    <ClerkProvider publishableKey={PUBLISHABLE_KEY} afterSignOutUrl="/">
+      <App />
+    </ClerkProvider>
+  );
+} else {
+  console.warn("Clerk Publishable Key not found. Auth features will be disabled.");
+  root.render(<App />);
+}
