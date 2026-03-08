@@ -264,12 +264,12 @@ const Pricing = () => {
                     {tier.cta}
                   </a>
                 ) : (
-                  <Link
-                    to={tier.ctaLink}
-                    className="w-full py-2.5 rounded-[10px] text-center text-sm font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity inline-block"
+                  <button
+                    onClick={() => openPayment(tier.name, price)}
+                    className="w-full py-2.5 rounded-[10px] text-center text-sm font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
                   >
-                    {tier.cta} — UGX {formatUGX(annual ? tier.annualPrice : tier.monthlyPrice)}/{annual ? "yr" : "mo"}
-                  </Link>
+                    {tier.cta} — UGX {formatUGX(price)}/{annual ? "yr" : "mo"}
+                  </button>
                 )}
               </motion.div>
             );
