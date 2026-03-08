@@ -46,6 +46,45 @@ export type Database = {
           },
         ]
       }
+      payment_requests: {
+        Row: {
+          amount_ugx: number
+          email: string
+          id: string
+          momo_transaction_id: string
+          network: string | null
+          plan: string
+          status: string | null
+          submitted_at: string | null
+          user_id: string | null
+          verified_at: string | null
+        }
+        Insert: {
+          amount_ugx: number
+          email: string
+          id?: string
+          momo_transaction_id: string
+          network?: string | null
+          plan: string
+          status?: string | null
+          submitted_at?: string | null
+          user_id?: string | null
+          verified_at?: string | null
+        }
+        Update: {
+          amount_ugx?: number
+          email?: string
+          id?: string
+          momo_transaction_id?: string
+          network?: string | null
+          plan?: string
+          status?: string | null
+          submitted_at?: string | null
+          user_id?: string | null
+          verified_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null

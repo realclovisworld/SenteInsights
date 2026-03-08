@@ -4,6 +4,8 @@ import { Check, Star, Shield, ArrowRight, Building2, ChevronDown } from "lucide-
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import PaymentModal from "@/components/PaymentModal";
+import HowToPay from "@/components/HowToPay";
 
 const tiers = [
   {
@@ -135,6 +137,11 @@ function formatUGX(amount: number): string {
 const Pricing = () => {
   const [annual, setAnnual] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [paymentModal, setPaymentModal] = useState<{ open: boolean; plan: string; amount: number; period: "month" | "year" } | null>(null);
+
+  const openPayment = (plan: string, amount: number) => {
+    setPaymentModal({ open: true, plan, amount, period: annual ? "year" : "month" });
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -257,18 +264,32 @@ const Pricing = () => {
                     {tier.cta}
                   </a>
                 ) : (
-                  <Link
-                    to={tier.ctaLink}
-                    className="w-full py-2.5 rounded-[10px] text-center text-sm font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity inline-block"
+                  <button
+                    onClick={() => openPayment(tier.name, price)}
+                    className="w-full py-2.5 rounded-[10px] text-center text-sm font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
                   >
-                    {tier.cta} — UGX {formatUGX(annual ? tier.annualPrice : tier.monthlyPrice)}/{annual ? "yr" : "mo"}
-                  </Link>
+                    {tier.cta} — UGX {formatUGX(price)}/{annual ? "yr" : "mo"}
+                  </button>
                 )}
               </motion.div>
             );
           })}
         </div>
       </section>
+
+      {/* How to Pay */}
+      <HowToPay />
+
+      {/* Payment Modal */}
+      {paymentModal && (
+        <PaymentModal
+          open={paymentModal.open}
+          onOpenChange={(open) => setPaymentModal(open ? paymentModal : null)}
+          plan={paymentModal.plan}
+          amount={paymentModal.amount}
+          period={paymentModal.period}
+        />
+      )}
 
       {/* Trust Bar */}
       <section className="container mx-auto px-4 pb-12">
