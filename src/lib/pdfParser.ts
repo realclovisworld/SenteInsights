@@ -28,7 +28,10 @@ export interface ParsedStatement {
   incomingCount: number;
   outgoingCount: number;
   accountHolder: string;
+  phoneNumber: string;
+  emailAddress: string;
   provider: string;
+  statementPeriod: string;
   dateRange: { from: string; to: string };
   validationError?: string;
 }
