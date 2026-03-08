@@ -139,7 +139,13 @@ function detectProvider(text: string): string {
 type StatementFormat = "FORMAT_1" | "FORMAT_2";
 
 function detectStatementFormat(text: string): StatementFormat {
-  if (text.includes("Payment Type") || text.includes("To/From")) return "FORMAT_2";
+  const hasFormat2Markers =
+    text.includes("Payment Type") ||
+    text.includes("To/From") ||
+    text.includes("MOMO USER") ||
+    (text.includes("DEBIT") && text.includes("Account Name"));
+
+  if (hasFormat2Markers) return "FORMAT_2";
   if (text.includes("Amount(UGX)") && text.includes("Fees(UGX)")) return "FORMAT_1";
   return "FORMAT_1";
 }
