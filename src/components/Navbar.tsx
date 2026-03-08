@@ -1,38 +1,10 @@
 import { Link, useLocation } from "react-router-dom";
 import { Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SignInButton, SignUpButton, UserButton, useAuth } from "@clerk/react";
-
-const ClerkAuthButtons = () => {
-  const { isSignedIn, isLoaded } = useAuth();
-
-  if (!isLoaded) return null;
-
-  if (isSignedIn) {
-    return <UserButton />;
-  }
-
-  return (
-    <div className="flex items-center gap-2">
-      <SignInButton mode="modal">
-        <Button variant="ghost" size="sm" className="font-heading font-medium text-sm">
-          Sign In
-        </Button>
-      </SignInButton>
-      <SignUpButton mode="modal">
-        <Button variant="outline" size="sm" className="rounded-[10px] font-heading font-medium text-sm">
-          Sign Up
-        </Button>
-      </SignUpButton>
-    </div>
-  );
-};
 
 const Navbar = () => {
   const location = useLocation();
   const isLanding = location.pathname === "/";
-
-  const clerkAvailable = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
   return (
     <>
@@ -56,15 +28,11 @@ const Navbar = () => {
             <Link to="/converter" className="text-sm font-medium text-muted hover:text-foreground transition-colors">PDF to CSV</Link>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Link to="/dashboard">
-              <Button className="rounded-[10px] font-heading font-semibold text-sm">
-                Analyse My Statement
-              </Button>
-            </Link>
-
-            {clerkAvailable && <ClerkAuthButtons />}
-          </div>
+          <Link to="/dashboard">
+            <Button className="rounded-[10px] font-heading font-semibold text-sm">
+              Analyse My Statement
+            </Button>
+          </Link>
         </div>
       </nav>
     </>
