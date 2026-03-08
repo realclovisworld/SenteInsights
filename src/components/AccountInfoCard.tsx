@@ -35,15 +35,15 @@ const AccountInfoCard = ({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="rounded-xl border border-border bg-card p-5 shadow-sm"
+      className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-sm"
     >
-      <div className="flex items-start justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary-light flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full bg-primary-light flex items-center justify-center flex-shrink-0">
             <User className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h2 className="font-heading font-semibold text-foreground text-lg">
+            <h2 className="font-heading font-semibold text-foreground text-base sm:text-lg">
               {accountHolder || "Account Holder"}
             </h2>
             <span className={`inline-block text-xs font-semibold px-2.5 py-0.5 rounded-full mt-1 ${badgeClass}`}>
@@ -53,18 +53,18 @@ const AccountInfoCard = ({
         </div>
         <button
           onClick={onUploadNew}
-          className="flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 font-medium transition-colors"
+          className="flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 font-medium transition-colors self-start"
         >
           <UploadCloud className="w-4 h-4" />
           New Statement
         </button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         {details.map((d) => (
           <div key={d.label} className="space-y-1">
             <div className="flex items-center gap-1.5 text-muted">
-              <d.icon className="w-3.5 h-3.5" />
+              <d.icon className="w-3.5 h-3.5 flex-shrink-0" />
               <span className="text-xs font-medium">{d.label}</span>
             </div>
             <p className="text-sm font-semibold text-foreground truncate">
