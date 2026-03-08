@@ -349,6 +349,16 @@ const Dashboard = () => {
                 : "Drop your PDF statement below to get instant insights into your spending."}
             </p>
             <FileUpload onFileSelect={handleUpload} />
+            <div className="mt-6">
+              <FeatureGate plan={userPlan} feature="batchUpload" mode="blur" lockMessage="Batch upload available on Pro plan and above">
+                <BatchFileUpload
+                  onFilesSelect={handleBatchUpload}
+                  items={batchItems}
+                  onRemove={handleRemoveBatchItem}
+                  maxFiles={10}
+                />
+              </FeatureGate>
+            </div>
           </div>
           <div className="max-w-2xl mx-auto mt-8 space-y-6">
             <UsageBar plan={userPlan} pagesUsedToday={pagesUsedToday} pagesUsedMonth={pagesUsedMonth} />
