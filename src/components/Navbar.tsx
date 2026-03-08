@@ -2,12 +2,13 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Scale, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SignedIn, SignedOut, UserButton } from "@clerk/react";
+import { useAuth, UserButton } from "@clerk/react";
 
 const Navbar = () => {
   const location = useLocation();
   const isLanding = location.pathname === "/";
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { isSignedIn } = useAuth();
 
   const navLinks = [
     ...(isLanding
@@ -47,23 +48,23 @@ const Navbar = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            <SignedOut>
-              <Link
-                to="/login"
-                className="hidden sm:block text-sm font-medium text-muted hover:text-foreground transition-colors"
-              >
-                Log in
-              </Link>
-              <Link to="/register" className="hidden sm:block">
-                <Button variant="outline" className="rounded-[10px] font-heading font-semibold text-sm">
-                  Register
-                </Button>
-              </Link>
-            </SignedOut>
-
-            <SignedIn>
-              <UserButton afterSignOutUrl="/" />
-            </SignedIn>
+            {!isSignedIn ? (
+              <>
+                <Link
+                  to="/login"
+                  className="hidden sm:block text-sm font-medium text-muted hover:text-foreground transition-colors"
+                >
+                  Log in
+                </Link>
+                <Link to="/register" className="hidden sm:block">
+                  <Button variant="outline" className="rounded-[10px] font-heading font-semibold text-sm">
+                    Register
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <UserButton />
+            )}
 
             <Link to="/dashboard" className="hidden sm:block">
               <Button className="rounded-[10px] font-heading font-semibold text-sm">
@@ -107,22 +108,24 @@ const Navbar = () => {
               )
             )}
 
-            <SignedOut>
-              <Link
-                to="/login"
-                onClick={() => setMobileOpen(false)}
-                className="block px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted/20 transition-colors"
-              >
-                Log in
-              </Link>
-              <Link
-                to="/register"
-                onClick={() => setMobileOpen(false)}
-                className="block px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted/20 transition-colors"
-              >
-                Register
-              </Link>
-            </SignedOut>
+            {!isSignedIn && (
+              <>
+                <Link
+                  to="/login"
+                  onClick={() => setMobileOpen(false)}
+                  className="block px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted/20 transition-colors"
+                >
+                  Log in
+                </Link>
+                <Link
+                  to="/register"
+                  onClick={() => setMobileOpen(false)}
+                  className="block px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted/20 transition-colors"
+                >
+                  Register
+                </Link>
+              </>
+            )}
 
             <Link to="/dashboard" onClick={() => setMobileOpen(false)} className="block mt-2">
               <Button className="w-full rounded-[10px] font-heading font-semibold text-sm">
