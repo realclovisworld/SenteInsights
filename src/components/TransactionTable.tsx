@@ -114,10 +114,50 @@ const TransactionTable = ({ transactions, plan = "anonymous" }: TransactionTable
             {showExtraCols ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             {showExtraCols ? "Hide" : "Show"} Fees/Taxes
           </Button>
-          <Button variant="outline" size="sm" className="rounded-[10px] gap-2" onClick={exportCSV}>
-            <Download className="w-4 h-4" />
-            Export CSV
-          </Button>
+          {/* CSV Export */}
+          {isAnonymous ? (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex items-center gap-1 opacity-50 cursor-not-allowed">
+                    <Lock className="w-3.5 h-3.5 text-muted-foreground" />
+                    <Button variant="outline" size="sm" className="rounded-[10px] gap-2 pointer-events-none" tabIndex={-1}>
+                      <Download className="w-4 h-4" />
+                      Export CSV
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent><p className="text-xs">Sign up free to export CSV</p></TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : (
+            <Button variant="outline" size="sm" className="rounded-[10px] gap-2" onClick={exportCSV}>
+              <Download className="w-4 h-4" />
+              Export CSV
+            </Button>
+          )}
+          {/* Excel Export */}
+          {canExcelExport ? (
+            <Button variant="outline" size="sm" className="rounded-[10px] gap-2" onClick={() => { /* TODO: Excel export */ }}>
+              <FileSpreadsheet className="w-4 h-4" />
+              Export Excel
+            </Button>
+          ) : (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex items-center gap-1 opacity-50 cursor-not-allowed">
+                    <Lock className="w-3.5 h-3.5 text-muted-foreground" />
+                    <Button variant="outline" size="sm" className="rounded-[10px] gap-2 pointer-events-none" tabIndex={-1}>
+                      <FileSpreadsheet className="w-4 h-4" />
+                      Export Excel
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent><p className="text-xs">Available on Starter plan and above — UGX 15,000/month</p></TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
       </div>
 
