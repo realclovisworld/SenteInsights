@@ -270,7 +270,7 @@ export async function fetchAllStatements(): Promise<AdminStatement[]> {
 // ============ SETTINGS ============
 
 export async function fetchAdminSettings(): Promise<Record<string, string>> {
-  const { data } = await supabase.from("admin_settings").select("*");
+  const { data } = await (supabase as any).from("admin_settings").select("*");
   const settings: Record<string, string> = {};
   (data || []).forEach((row: { key: string; value: string | null }) => {
     settings[row.key] = row.value || "";
@@ -279,7 +279,7 @@ export async function fetchAdminSettings(): Promise<Record<string, string>> {
 }
 
 export async function updateAdminSetting(key: string, value: string) {
-  await supabase
+  await (supabase as any)
     .from("admin_settings")
     .update({ value, updated_at: new Date().toISOString() })
     .eq("key", key);
