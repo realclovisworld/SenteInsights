@@ -112,7 +112,7 @@ const Dashboard = () => {
         console.error("Error loading profile:", err);
       }
     })();
-  }, [isSignedIn, userId]);
+  }, [isSignedIn, userId, user]);
 
   // Upload gate check
   const checkUploadAllowed = useCallback((numPages: number): boolean => {
