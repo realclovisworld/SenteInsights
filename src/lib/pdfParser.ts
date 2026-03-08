@@ -157,6 +157,11 @@ function detectStatementPeriod(text: string): string {
   return "";
 }
 
+function detectStatementDate(text: string): string {
+  const m = text.match(/(?:Date\s+of\s+Statement|Statement\s+Date)\s*[:\-]?\s*(\d{1,2}[\/-]\d{1,2}[\/-]\d{4}(?:\s+\d{1,2}:\d{2}(?::\d{2})?)?)/i);
+  return m ? m[1].trim() : "";
+}
+
 // ============ MAIN PARSE FUNCTION ============
 
 export async function parsePDF(file: File): Promise<ParsedStatement> {
