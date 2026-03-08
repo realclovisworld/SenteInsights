@@ -146,6 +146,7 @@ function detectStatementPeriod(text: string): string {
   const patterns = [
     /(?:Statement\s*Period|Period|Date\s*Range|From)\s*[:\-]?\s*(\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})\s*(?:to|[-–])\s*(\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})/i,
     /(?:From)\s*[:\-]?\s*(\d{1,2}\s+\w+\s+\d{4})\s*(?:to|[-–])\s*(\d{1,2}\s+\w+\s+\d{4})/i,
+    /From\s+date\s*[:\-]?\s*(\d{1,2}\s+\w+\s+\d{4})\s+To\s+date\s*[:\-]?\s*(\d{1,2}\s+\w+\s+\d{4})/i,
   ];
   for (const p of patterns) {
     const m = text.match(p);
