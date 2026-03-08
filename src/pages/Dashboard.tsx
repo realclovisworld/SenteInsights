@@ -99,7 +99,9 @@ const Dashboard = () => {
     }
     (async () => {
       try {
-        const profile = await getOrCreateProfile(userId);
+        const email = user?.primaryEmailAddress?.emailAddress;
+        const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || undefined;
+        const profile = await getOrCreateProfile(userId, { email, fullName });
         if (profile) {
           const plan = (profile.plan || "free") as PlanId;
           setUserPlan(PLANS[plan] ? plan : "free");
