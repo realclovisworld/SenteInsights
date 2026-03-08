@@ -9,6 +9,7 @@ import SavingsGoal from "@/components/SavingsGoal";
 import AIInsights from "@/components/AIInsights";
 import TransactionTable from "@/components/TransactionTable";
 import IncomeSourcesChart from "@/components/IncomeSourcesChart";
+import AccountInfoCard from "@/components/AccountInfoCard";
 import { parsePDF, type ParsedStatement } from "@/lib/pdfParser";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -111,23 +112,15 @@ const Dashboard = () => {
           </Alert>
         )}
 
-        <div className="flex items-center justify-between">
-          <div>
-            {data.accountHolder && (
-              <p className="text-sm text-muted">Statement for <span className="font-semibold text-foreground">{data.accountHolder}</span></p>
-            )}
-            <p className="text-xs text-muted">
-              Provider: {data.provider} · {data.transactions.length} transactions
-              {data.dateRange.from && ` · ${data.dateRange.from} to ${data.dateRange.to}`}
-            </p>
-          </div>
-          <button
-            onClick={() => setData(null)}
-            className="text-sm text-primary hover:underline"
-          >
-            Upload new statement
-          </button>
-        </div>
+        <AccountInfoCard
+          accountHolder={data.accountHolder}
+          phoneNumber={data.phoneNumber}
+          emailAddress={data.emailAddress}
+          provider={data.provider}
+          statementPeriod={data.statementPeriod}
+          totalTransactions={data.transactions.length}
+          onUploadNew={() => setData(null)}
+        />
 
         <StatCards
           totalIn={data.totalIn}
