@@ -5,12 +5,15 @@ import "./index.css";
 
 const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
-if (!publishableKey) {
-  throw new Error("Missing Clerk Publishable Key");
-}
+const root = createRoot(document.getElementById("root")!);
 
-createRoot(document.getElementById("root")!).render(
-  <ClerkProvider publishableKey={publishableKey}>
-    <App />
-  </ClerkProvider>
-);
+if (publishableKey) {
+  root.render(
+    <ClerkProvider publishableKey={publishableKey}>
+      <App />
+    </ClerkProvider>
+  );
+} else {
+  console.warn("Clerk Publishable Key not found. Auth features will be disabled.");
+  root.render(<App />);
+}
