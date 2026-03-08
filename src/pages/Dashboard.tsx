@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useAuth, useUser } from "@clerk/react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -12,8 +12,12 @@ import TransactionTable from "@/components/TransactionTable";
 import IncomeSourcesChart from "@/components/IncomeSourcesChart";
 import AccountInfoCard from "@/components/AccountInfoCard";
 import StatementHistory from "@/components/StatementHistory";
+import UsageBar from "@/components/UsageBar";
+import UpgradeModal from "@/components/UpgradeModal";
+import FeatureGate from "@/components/FeatureGate";
 import { parsePDF, type ParsedStatement } from "@/lib/pdfParser";
 import { saveStatementToSupabase, getOrCreateProfile, fetchFullStatement } from "@/lib/supabase-helpers";
+import { type PlanId, PLANS, getAnonUsage, incrementAnonUsage } from "@/lib/plans";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -75,28 +79,79 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState("");
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [upgradeMessage, setUpgradeMessage] = useState("");
 
-  // Resolve user ID: Clerk userId for signed-in users, "anonymous" otherwise
+  // Profile state for plan & usage
+  const [userPlan, setUserPlan] = useState<PlanId>("anonymous");
+  const [pagesUsedToday, setPagesUsedToday] = useState(0);
+  const [pagesUsedMonth, setPagesUsedMonth] = useState(0);
+
   const effectiveUserId = userId || "anonymous";
 
-  // Ensure profile exists when user signs in
-  const ensureProfile = useCallback(async () => {
-    if (!isSignedIn || !userId) return;
-    try {
-      await getOrCreateProfile(userId);
-    } catch (err) {
-      console.error("Error ensuring profile:", err);
+  // Load profile on mount
+  useEffect(() => {
+    if (!isSignedIn || !userId) {
+      setUserPlan("anonymous");
+      return;
     }
+    (async () => {
+      try {
+        const profile = await getOrCreateProfile(userId);
+        if (profile) {
+          const plan = (profile.plan || "free") as PlanId;
+          setUserPlan(PLANS[plan] ? plan : "free");
+          setPagesUsedToday(profile.pages_used_today || 0);
+          setPagesUsedMonth(profile.pages_used_month || 0);
+        }
+      } catch (err) {
+        console.error("Error loading profile:", err);
+      }
+    })();
   }, [isSignedIn, userId]);
 
-  // Create profile on first render when signed in
-  useState(() => {
-    if (isSignedIn && userId) {
-      ensureProfile();
+  // Upload gate check
+  const checkUploadAllowed = useCallback((numPages: number): boolean => {
+    const plan = userPlan;
+    const config = PLANS[plan];
+
+    if (plan === "anonymous") {
+      const { used } = getAnonUsage();
+      if (used + numPages > 1) {
+        setUpgradeMessage("You've used your free page for today. Sign up free to get 5 pages per day — no payment needed.");
+        setUpgradeOpen(true);
+        return false;
+      }
+      return true;
     }
-  });
+
+    if (config.pagesPerDay) {
+      if (pagesUsedToday + numPages > config.pagesPerDay) {
+        setUpgradeMessage(`You've used your ${config.pagesPerDay} free pages for today. Upgrade to Starter for 150 pages per month.`);
+        setUpgradeOpen(true);
+        return false;
+      }
+    }
+
+    if (config.pagesPerMonth) {
+      if (pagesUsedMonth + numPages > config.pagesPerMonth) {
+        if (plan === "business") {
+          setUpgradeMessage("You've reached your Business plan limit. Please contact us for Enterprise pricing.");
+        } else {
+          setUpgradeMessage(`You've reached your ${config.name} plan limit of ${config.pagesPerMonth} pages this month.`);
+        }
+        setUpgradeOpen(true);
+        return false;
+      }
+    }
+
+    return true;
+  }, [userPlan, pagesUsedToday, pagesUsedMonth]);
 
   const handleUpload = async (file: File) => {
+    // Pre-check with 1 page estimate (will refine after parse)
+    if (!checkUploadAllowed(1)) return;
+
     setLoading(true);
     try {
       setLoadingStep("Reading statement…");
@@ -114,18 +169,34 @@ const Dashboard = () => {
         return;
       }
 
+      const numPages = 1; // simplified
+
+      // Re-check with actual page count
+      if (!checkUploadAllowed(numPages)) {
+        setLoading(false);
+        return;
+      }
+
       setLoadingStep(`Found ${result.transactions.length} transactions!`);
       await new Promise((r) => setTimeout(r, 400));
 
-      // Save to Supabase in background
-      setLoadingStep("Saving to your account…");
-      try {
-        const insightTexts = generateInsightTexts(result.transactions);
-        const numPages = 1;
-        await saveStatementToSupabase(effectiveUserId, result, numPages, insightTexts);
-        setHistoryRefreshKey((k) => k + 1);
-      } catch (saveErr) {
-        console.error("Error saving to Supabase:", saveErr);
+      // Track anonymous usage
+      if (userPlan === "anonymous") {
+        incrementAnonUsage(numPages);
+      }
+
+      // Save to Supabase
+      if (isSignedIn && userId) {
+        setLoadingStep("Saving to your account…");
+        try {
+          const insightTexts = generateInsightTexts(result.transactions);
+          await saveStatementToSupabase(effectiveUserId, result, numPages, insightTexts);
+          setHistoryRefreshKey((k) => k + 1);
+          setPagesUsedToday((p) => p + numPages);
+          setPagesUsedMonth((p) => p + numPages);
+        } catch (saveErr) {
+          console.error("Error saving to Supabase:", saveErr);
+        }
       }
 
       setData(result);
@@ -199,11 +270,15 @@ const Dashboard = () => {
             </p>
             <FileUpload onFileSelect={handleUpload} />
           </div>
-          <div className="max-w-2xl mx-auto mt-12">
-            <StatementHistory onViewStatement={handleViewStatement} refreshKey={historyRefreshKey} userId={effectiveUserId} />
+          <div className="max-w-2xl mx-auto mt-8 space-y-6">
+            <UsageBar plan={userPlan} pagesUsedToday={pagesUsedToday} pagesUsedMonth={pagesUsedMonth} />
+            <FeatureGate plan={userPlan} feature="statementHistory" mode="blur" lockMessage="Statement history available on Starter plan and above">
+              <StatementHistory onViewStatement={handleViewStatement} refreshKey={historyRefreshKey} userId={effectiveUserId} />
+            </FeatureGate>
           </div>
         </div>
         <Footer />
+        <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} currentPlan={userPlan} message={upgradeMessage} />
       </div>
     );
   }
@@ -212,6 +287,8 @@ const Dashboard = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container mx-auto px-4 py-8 space-y-6">
+        <UsageBar plan={userPlan} pagesUsedToday={pagesUsedToday} pagesUsedMonth={pagesUsedMonth} />
+
         {data.validationError && (
           <Alert variant="destructive" className="border-destructive bg-destructive/10">
             <AlertTriangle className="h-4 w-4" />
@@ -249,15 +326,20 @@ const Dashboard = () => {
           <div className="space-y-6">
             <MonthlyTrend transactions={data.transactions} />
             <IncomeSourcesChart transactions={data.transactions} />
-            <AIInsights transactions={data.transactions} />
+            <FeatureGate plan={userPlan} feature="aiInsights" mode="blur" lockMessage="Sign up free to unlock AI Insights">
+              <AIInsights transactions={data.transactions} />
+            </FeatureGate>
           </div>
         </div>
 
-        <TransactionTable transactions={data.transactions} />
+        <TransactionTable transactions={data.transactions} plan={userPlan} />
 
-        <StatementHistory onViewStatement={handleViewStatement} refreshKey={historyRefreshKey} userId={effectiveUserId} />
+        <FeatureGate plan={userPlan} feature="statementHistory" mode="blur" lockMessage="Statement history available on Starter plan and above">
+          <StatementHistory onViewStatement={handleViewStatement} refreshKey={historyRefreshKey} userId={effectiveUserId} />
+        </FeatureGate>
       </div>
       <Footer />
+      <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} currentPlan={userPlan} message={upgradeMessage} />
     </div>
   );
 };
