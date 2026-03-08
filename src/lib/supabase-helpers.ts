@@ -3,7 +3,7 @@ import type { ParsedStatement, ParsedTransaction } from "@/lib/pdfParser";
 
 // ============ PROFILE HELPERS ============
 
-export async function getOrCreateProfile(userId: string) {
+export async function getOrCreateProfile(userId: string, userInfo?: { email?: string; fullName?: string }) {
   const { data: existing } = await supabase
     .from("profiles")
     .select("*")
@@ -28,6 +28,10 @@ export async function getOrCreateProfile(userId: string) {
       }
     }
 
+    // Backfill email/name if missing
+    if (userInfo?.email && !existing.email) updates.email = userInfo.email;
+    if (userInfo?.fullName && !existing.full_name) updates.full_name = userInfo.fullName;
+
     if (Object.keys(updates).length > 0) {
       const { data: updated } = await supabase
         .from("profiles")
@@ -43,7 +47,11 @@ export async function getOrCreateProfile(userId: string) {
 
   const { data: newProfile } = await supabase
     .from("profiles")
-    .insert({ user_id: userId })
+    .insert({
+      user_id: userId,
+      email: userInfo?.email || null,
+      full_name: userInfo?.fullName || null,
+    })
     .select()
     .single();
 
