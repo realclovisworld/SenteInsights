@@ -217,19 +217,17 @@ export async function fetchStatementTransactions(statementId: string): Promise<P
   }
 
   return (data || []).map((t: StoredTransaction) => {
-    let displayDate = t.date || "";
-    if (displayDate.includes("-") && displayDate.split("-")[0].length === 4) {
-      const p = displayDate.split("-");
-      displayDate = `${p[2]}-${p[1]}-${p[0]}`;
-    }
+    // Dates are stored as YYYY-MM-DD in DB, keep as-is
     return {
-      date: displayDate,
+      date: t.date || "",
       time: t.time || "",
       transactionType: t.transaction_type || "",
       description: t.description || "",
       transactionId: t.transaction_id_ref || "",
       from: "",
       to: "",
+      accountName: "",
+      reference: "",
       amount: t.amount || 0,
       fees: t.fees || 0,
       taxes: t.taxes || 0,
