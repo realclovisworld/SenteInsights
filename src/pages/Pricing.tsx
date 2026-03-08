@@ -277,6 +277,20 @@ const Pricing = () => {
         </div>
       </section>
 
+      {/* How to Pay */}
+      <HowToPay />
+
+      {/* Payment Modal */}
+      {paymentModal && (
+        <PaymentModal
+          open={paymentModal.open}
+          onOpenChange={(open) => setPaymentModal(open ? paymentModal : null)}
+          plan={paymentModal.plan}
+          amount={paymentModal.amount}
+          period={paymentModal.period}
+        />
+      )}
+
       {/* Trust Bar */}
       <section className="container mx-auto px-4 pb-12">
         <div className="flex flex-wrap justify-center gap-6 text-sm text-muted">
