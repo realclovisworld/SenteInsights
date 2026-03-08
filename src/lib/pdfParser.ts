@@ -61,8 +61,27 @@ function categorize(description: string, transactionType: string, direction: "se
 
 function detectProvider(text: string): string {
   const lower = text.toLowerCase();
-  if (lower.includes("airtel")) return "Airtel Money";
-  if (lower.includes("mtn") || lower.includes("mobile money") || lower.includes("momo")) return "MTN MoMo";
+
+  // Strong MTN indicators first (to avoid false Airtel matches from merchant names like "Payment for Airtel")
+  const hasMTNMarkers =
+    lower.includes("mtn") ||
+    lower.includes("mobile money") ||
+    lower.includes("momo") ||
+    lower.includes("transaction id") ||
+    lower.includes("amount(ugx)") ||
+    lower.includes("fees(ugx)") ||
+    lower.includes("taxes(ugx)") ||
+    lower.includes("balance(ugx)");
+
+  // Airtel parser-specific markers
+  const hasAirtelMarkers =
+    lower.includes("airtel money") ||
+    lower.includes("transaction successful") ||
+    lower.includes(" credit ") ||
+    lower.includes(" debit ");
+
+  if (hasMTNMarkers) return "MTN MoMo";
+  if (hasAirtelMarkers) return "Airtel Money";
   if (lower.includes("equity")) return "Equity Bank";
   if (lower.includes("stanbic")) return "Stanbic Bank";
   return "Unknown";
@@ -136,12 +155,14 @@ export async function parsePDF(file: File): Promise<ParsedStatement> {
   const emailAddress = detectEmail(fullText);
   const statementPeriod = detectStatementPeriod(fullText);
 
-  let transactions: ParsedTransaction[];
+  let transactions: ParsedTransaction[] = [];
 
   if (provider === "Airtel Money") {
     transactions = parseAirtel(fullText, accountHolder);
+    if (transactions.length === 0) transactions = parseMTN(fullText, accountHolder);
   } else {
     transactions = parseMTN(fullText, accountHolder);
+    if (transactions.length === 0) transactions = parseAirtel(fullText, accountHolder);
   }
 
   // Compute totals
@@ -290,9 +311,6 @@ function parseAirtel(fullText: string, accountHolder: string): ParsedTransaction
 function parseMTN(fullText: string, accountHolder: string): ParsedTransaction[] {
   const transactions: ParsedTransaction[] = [];
 
-  console.log("[MTN Parser] Full text length:", fullText.length);
-  console.log("[MTN Parser] First 500 chars:", fullText.substring(0, 500));
-
   // Support multiple date formats: DD-MM-YYYY, DD/MM/YYYY, YYYY-MM-DD, YYYY/MM/DD
   const txStartRegex = /(\d{2}[\/-]\d{2}[\/-]\d{4}|\d{4}[\/-]\d{2}[\/-]\d{2})\s+(\d{1,2}:\d{2}(?::\d{2})?(?:\s*[APap][Mm])?)/g;
 
@@ -302,18 +320,12 @@ function parseMTN(fullText: string, accountHolder: string): ParsedTransaction[] 
     starts.push({ index: match.index, date: match[1], time: match[2].trim() });
   }
 
-  console.log("[MTN Parser] Found date-time starts:", starts.length);
-  if (starts.length > 0) {
-    console.log("[MTN Parser] First match:", starts[0]);
-  }
-
   // If no date+time found, try date-only pattern
   if (starts.length === 0) {
     const dateOnlyRegex = /(\d{2}[\/-]\d{2}[\/-]\d{4}|\d{4}[\/-]\d{2}[\/-]\d{2})/g;
     while ((match = dateOnlyRegex.exec(fullText)) !== null) {
       starts.push({ index: match.index, date: match[1], time: "" });
     }
-    console.log("[MTN Parser] Date-only fallback found:", starts.length);
   }
 
   for (let i = 0; i < starts.length; i++) {
@@ -428,6 +440,5 @@ function parseMTN(fullText: string, accountHolder: string): ParsedTransaction[] 
     });
   }
 
-  console.log("[MTN Parser] Parsed transactions:", transactions.length);
   return transactions;
 }
