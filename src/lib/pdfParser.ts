@@ -91,20 +91,42 @@ function detectProvider(text: string): string {
 
 function detectAccountHolder(text: string): string {
   const patterns = [
-    /(?:Customer\s*Name|Account\s*Name|Subscriber\s*Name|Name)\s*[:\-]?\s*([A-Z][A-Za-z\s]+?)(?:\s*(?:Mobile|Phone|Email|Account|$|\d))/im,
+    /(?:Customer\s*Name|Account\s*Name|Subscriber\s*Name|Name)\s*[:\-]?\s*([A-Z][A-Za-z\s]{2,30}?)(?:\s*(?:Mobile|Phone|Email|Account|$|\d))/im,
     /(?:Statement\s+for|Subscriber)\s*[:\-]?\s*([A-Z][A-Z\s]{3,})/i,
   ];
   for (const p of patterns) {
     const m = text.match(p);
-    if (m) return m[1].trim();
+    if (m && m[1].trim().length > 1) return m[1].trim();
   }
   return "";
 }
 
+// Extract account holder from the most frequent "From" name in transactions
+function detectAccountHolderFromTransactions(transactions: ParsedTransaction[]): string {
+  const fromCounts: Record<string, number> = {};
+  for (const t of transactions) {
+    if (t.from && t.from.length > 1) {
+      fromCounts[t.from] = (fromCounts[t.from] || 0) + 1;
+    }
+  }
+  let best = "";
+  let bestCount = 0;
+  for (const [name, count] of Object.entries(fromCounts)) {
+    if (count > bestCount) {
+      best = name;
+      bestCount = count;
+    }
+  }
+  return best;
+}
+
 function detectPhoneNumber(text: string): string {
   const patterns = [
-    /(?:Mobile|Phone|MSISDN|Tel|Number)\s*(?:Number|No\.?)?\s*[:\-]?\s*((?:\+?256|0)\d[\s\-]?\d{3}[\s\-]?\d{3}[\s\-]?\d{3})/i,
+    // "Mobile Number 256760325115" or "Phone Number: +256..."
+    /(?:Mobile|Phone|MSISDN|Tel)\s*(?:Number|No\.?)?\s*[:\-]?\s*((?:\+?256)\d{9})/i,
+    /(?:Mobile|Phone|MSISDN|Tel)\s*(?:Number|No\.?)?\s*[:\-]?\s*(0\d{9})/i,
     /(?:Mobile|Phone|MSISDN|Tel)\s*[:\-]?\s*(\d{10,15})/i,
+    // Standalone patterns
     /((?:\+256|256)\d{9})/,
     /(07[0-9]\d{7})/,
   ];
@@ -135,6 +157,11 @@ function detectStatementPeriod(text: string): string {
   return "";
 }
 
+function detectStatementDate(text: string): string {
+  const m = text.match(/(?:Date\s+of\s+Statement|Statement\s+Date)\s*[:\-]?\s*(\d{1,2}[\/-]\d{1,2}[\/-]\d{4}(?:\s+\d{1,2}:\d{2}(?::\d{2})?)?)/i);
+  return m ? m[1].trim() : "";
+}
+
 // ============ MAIN PARSE FUNCTION ============
 
 export async function parsePDF(file: File): Promise<ParsedStatement> {
@@ -150,10 +177,11 @@ export async function parsePDF(file: File): Promise<ParsedStatement> {
   }
 
   const provider = detectProvider(fullText);
-  const accountHolder = detectAccountHolder(fullText);
+  let accountHolder = detectAccountHolder(fullText);
   const phoneNumber = detectPhoneNumber(fullText);
   const emailAddress = detectEmail(fullText);
   const statementPeriod = detectStatementPeriod(fullText);
+  const statementDate = detectStatementDate(fullText);
 
   let transactions: ParsedTransaction[] = [];
 
@@ -163,6 +191,11 @@ export async function parsePDF(file: File): Promise<ParsedStatement> {
   } else {
     transactions = parseMTN(fullText, accountHolder);
     if (transactions.length === 0) transactions = parseAirtel(fullText, accountHolder);
+  }
+
+  // Fallback: extract account holder from most frequent "From" name in transactions
+  if (!accountHolder && transactions.length > 0) {
+    accountHolder = detectAccountHolderFromTransactions(transactions);
   }
 
   // Compute totals
@@ -183,7 +216,7 @@ export async function parsePDF(file: File): Promise<ParsedStatement> {
 
   const dates = transactions.map(t => t.date);
   const dateRange = { from: dates[0] || "", to: dates[dates.length - 1] || "" };
-  const resolvedPeriod = statementPeriod || (dateRange.from && dateRange.to ? `${dateRange.from} to ${dateRange.to}` : "");
+  const resolvedPeriod = statementPeriod || statementDate || (dateRange.from && dateRange.to ? `${dateRange.from} to ${dateRange.to}` : "");
 
   let validationError: string | undefined;
   if (pdf.numPages > 1 && transactions.length < 10) {
