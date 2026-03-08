@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import FileUpload from "@/components/FileUpload";
@@ -10,16 +10,69 @@ import AIInsights from "@/components/AIInsights";
 import TransactionTable from "@/components/TransactionTable";
 import IncomeSourcesChart from "@/components/IncomeSourcesChart";
 import AccountInfoCard from "@/components/AccountInfoCard";
+import StatementHistory from "@/components/StatementHistory";
 import { parsePDF, type ParsedStatement } from "@/lib/pdfParser";
+import { saveStatementToSupabase, checkPageLimit, fetchFullStatement } from "@/lib/supabase-helpers";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
 
+// Generate insight texts from transactions (mirrors AIInsights component logic)
+function generateInsightTexts(transactions: ParsedStatement["transactions"]): string[] {
+  if (!transactions || transactions.length === 0) return [];
+  const result: string[] = [];
+  const categoryTotals: Record<string, number> = {};
+  const incomeSources: Record<string, number> = {};
+  let totalOut = 0;
+  let totalFees = 0;
+
+  for (const t of transactions) {
+    if (t.type === "sent") {
+      categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
+      totalOut += t.amount;
+    } else {
+      const sender = t.from?.trim() || t.description?.trim() || "Unknown";
+      incomeSources[sender] = (incomeSources[sender] || 0) + t.amount;
+    }
+    totalFees += t.fees;
+  }
+
+  const sortedCats = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]);
+  if (sortedCats.length > 0) {
+    const [topCat, topAmt] = sortedCats[0];
+    const pct = totalOut > 0 ? Math.round((topAmt / totalOut) * 100) : 0;
+    result.push(`Your top spending category is ${topCat} at ${pct}% of total outgoing (UGX ${topAmt.toLocaleString("en-UG")}).`);
+  }
+
+  const dayTotals: Record<string, number> = {};
+  for (const t of transactions) {
+    if (t.type === "sent") dayTotals[t.date] = (dayTotals[t.date] || 0) + t.amount;
+  }
+  const sortedDays = Object.entries(dayTotals).sort((a, b) => b[1] - a[1]);
+  if (sortedDays.length > 0) {
+    const [topDay, dayAmt] = sortedDays[0];
+    result.push(`Your highest spending day was ${topDay} with UGX ${dayAmt.toLocaleString("en-UG")} spent.`);
+  }
+
+  const sortedIncome = Object.entries(incomeSources).sort((a, b) => b[1] - a[1]);
+  if (sortedIncome.length > 0) {
+    const [topSrc, srcAmt] = sortedIncome[0];
+    result.push(`Your largest income source is "${topSrc}" with UGX ${srcAmt.toLocaleString("en-UG")} received.`);
+  }
+
+  if (totalFees > 0) {
+    result.push(`You paid UGX ${totalFees.toLocaleString("en-UG")} in transaction fees. Consider consolidating transactions to reduce fees.`);
+  }
+
+  return result.slice(0, 5);
+}
+
 const Dashboard = () => {
   const [data, setData] = useState<ParsedStatement | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState("");
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
 
   const handleUpload = async (file: File) => {
     setLoading(true);
@@ -42,6 +95,19 @@ const Dashboard = () => {
       setLoadingStep(`Found ${result.transactions.length} transactions!`);
       await new Promise((r) => setTimeout(r, 400));
 
+      // Save to Supabase in background
+      setLoadingStep("Saving to your account…");
+      try {
+        const insightTexts = generateInsightTexts(result.transactions);
+        // Estimate pages from the PDF (use 1 as minimum since we parsed it client-side)
+        const numPages = 1; // pdfjs already extracted pages, we count as 1 upload
+        await saveStatementToSupabase(result, numPages, insightTexts);
+        setHistoryRefreshKey((k) => k + 1);
+      } catch (saveErr) {
+        console.error("Error saving to Supabase:", saveErr);
+        // Non-blocking — data is still shown
+      }
+
       setData(result);
     } catch (err) {
       console.error("PDF parsing error:", err);
@@ -50,6 +116,24 @@ const Dashboard = () => {
       setLoading(false);
     }
   };
+
+  const handleViewStatement = useCallback(async (statementId: string) => {
+    setLoading(true);
+    setLoadingStep("Loading saved statement…");
+    try {
+      const stmt = await fetchFullStatement(statementId);
+      if (stmt && stmt.transactions.length > 0) {
+        setData(stmt);
+      } else {
+        toast.error("Could not load statement. Try re-uploading.");
+      }
+    } catch (err) {
+      console.error("Error loading statement:", err);
+      toast.error("Failed to load statement.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   if (loading) {
     return (
@@ -92,6 +176,9 @@ const Dashboard = () => {
               Drop your PDF statement below to get instant insights into your spending.
             </p>
             <FileUpload onFileSelect={handleUpload} />
+          </div>
+          <div className="max-w-2xl mx-auto mt-12">
+            <StatementHistory onViewStatement={handleViewStatement} refreshKey={historyRefreshKey} />
           </div>
         </div>
         <Footer />
@@ -146,6 +233,8 @@ const Dashboard = () => {
         </div>
 
         <TransactionTable transactions={data.transactions} />
+
+        <StatementHistory onViewStatement={handleViewStatement} refreshKey={historyRefreshKey} />
       </div>
       <Footer />
     </div>
