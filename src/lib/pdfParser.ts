@@ -311,9 +311,6 @@ function parseAirtel(fullText: string, accountHolder: string): ParsedTransaction
 function parseMTN(fullText: string, accountHolder: string): ParsedTransaction[] {
   const transactions: ParsedTransaction[] = [];
 
-  console.log("[MTN Parser] Full text length:", fullText.length);
-  console.log("[MTN Parser] First 500 chars:", fullText.substring(0, 500));
-
   // Support multiple date formats: DD-MM-YYYY, DD/MM/YYYY, YYYY-MM-DD, YYYY/MM/DD
   const txStartRegex = /(\d{2}[\/-]\d{2}[\/-]\d{4}|\d{4}[\/-]\d{2}[\/-]\d{2})\s+(\d{1,2}:\d{2}(?::\d{2})?(?:\s*[APap][Mm])?)/g;
 
