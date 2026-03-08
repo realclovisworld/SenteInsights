@@ -46,7 +46,7 @@ const FileUpload = ({ onFileSelect, accept = ".pdf", label = "Drag your statemen
       <p className="text-sm text-muted font-medium">
         {fileName || label}
       </p>
-      <p className="text-xs text-muted">Supports PDF statements from MTN MoMo, Airtel Money, Equity & Stanbic</p>
+      <p className="text-xs text-muted">Supports PDF statements from MTN MoMo & Airtel Money</p>
       <input type="file" accept={accept} className="hidden" onChange={handleChange} />
     </label>
   );

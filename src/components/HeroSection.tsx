@@ -16,7 +16,7 @@ const HeroSection = () => {
             Finally understand where your money goes.
           </h1>
           <p className="text-lg text-muted mb-8 max-w-lg">
-            Upload your MTN MoMo, Airtel Money, Equity or Stanbic statement and get instant AI-powered insights — free, private, and built for Uganda.
+            Upload your MTN MoMo or Airtel Money statement and get instant AI-powered insights — free, private, and built for Uganda.
           </p>
           <div className="flex flex-wrap gap-4">
             <Link to="/dashboard">
