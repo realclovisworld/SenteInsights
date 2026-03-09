@@ -33,7 +33,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    console.error("[MoMoSense] App error:", error, info);
+    console.error("[SenteInsights] App error:", error, info);
   }
 
   render() {

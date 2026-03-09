@@ -105,7 +105,7 @@ const tiers = [
       "Dedicated infrastructure",
     ],
     cta: "Contact Us",
-    ctaLink: "mailto:hello@momosense.com",
+    ctaLink: "mailto:hello@senteinsights.com",
     style: "outline" as const,
     popular: false,
   },
@@ -137,7 +137,7 @@ const faqs = [
     a: "Yes. All statement processing happens in your browser — your PDF data is never uploaded or stored on any server. We only store the parsed summary and transaction data in your secure account.",
   },
   {
-    q: "Do I need an account to use MoMoSense?",
+    q: "Do I need an account to use SenteInsights?",
     a: "You can try it without an account (1 page/day with watermarked export). Sign up for free to get 5 pages/day, full exports, and AI insights. Paid plans unlock even higher limits.",
   },
   {

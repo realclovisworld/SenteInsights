@@ -12,7 +12,7 @@ const About = () => (
         animate={{ opacity: 1, y: 0 }}
         className="text-4xl font-heading font-bold text-foreground mb-6"
       >
-        About MoMoSense
+        About SenteInsights
       </motion.h1>
 
       <motion.div
@@ -22,7 +22,7 @@ const About = () => (
         className="space-y-6 text-muted leading-relaxed"
       >
         <p>
-          MoMoSense is a Ugandan-built tool that turns your Mobile Money PDF statements into
+          SenteInsights is a Ugandan-built tool that turns your Mobile Money PDF statements into
           clear, actionable financial insights. We believe everyone deserves to understand their
           money — without needing a finance degree.
         </p>
@@ -44,8 +44,8 @@ const About = () => (
 
         <p>
           Have questions or feedback? Reach out at{" "}
-          <a href="mailto:hello@momosense.com" className="text-primary hover:underline">
-            hello@momosense.com
+          <a href="mailto:hello@senteinsights.com" className="text-primary hover:underline">
+            hello@senteinsights.com
           </a>
         </p>
       </motion.div>

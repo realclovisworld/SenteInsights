@@ -37,7 +37,7 @@ const DashboardMockup = () => {
                 className="flex-1 rounded-md px-3 py-1 font-mono text-[11px] flex items-center gap-1.5"
                 style={{ background: "#2a2a3e", color: "#888" }}
               >
-                🔒 app.momosense.me/dashboard
+                🔒 app.senteinsights.me/dashboard
               </div>
             </div>
 
@@ -59,7 +59,7 @@ const DashboardMockup = () => {
                   <div className="w-[26px] h-[26px] rounded-md flex items-center justify-center text-[13px]" style={{ background: "#1A7A4A" }}>
                     💱
                   </div>
-                  MoMoSense
+                  SenteInsights
                 </div>
                 <div className="flex items-center gap-2.5">
                   <div className="w-[26px] h-[26px] rounded-full flex items-center justify-center text-[10px] text-white font-bold" style={{ background: "linear-gradient(135deg, #1A7A4A, #F4B942)" }}>

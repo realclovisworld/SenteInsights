@@ -5,7 +5,7 @@ import "./index.css";
 
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
-console.log("[MoMoSense] Clerk publishable key loaded:", CLERK_PUBLISHABLE_KEY ? "✅ present" : "❌ MISSING");
+console.log("[SenteInsights] Clerk publishable key loaded:", CLERK_PUBLISHABLE_KEY ? "✅ present" : "❌ MISSING");
 
 if (!CLERK_PUBLISHABLE_KEY) {
   console.error("Missing VITE_CLERK_PUBLISHABLE_KEY environment variable");

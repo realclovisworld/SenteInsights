@@ -33,7 +33,7 @@ const UpgradeModal = ({ open, onOpenChange, currentPlan, message }: UpgradeModal
     if (isAnonymous) {
       clerk.openSignUp();
     } else if (isBusiness) {
-      window.location.href = "mailto:contact@momosense.app";
+      window.location.href = "mailto:contact@senteinsights.app";
     } else {
       navigate("/pricing");
     }

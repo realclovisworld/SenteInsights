@@ -35,10 +35,10 @@ const Privacy = () => (
         <p>We do not sell, rent, or share your personal data with third parties. We use Supabase for secure data storage and Clerk for authentication.</p>
 
         <h2 className="text-lg font-heading font-semibold text-foreground">5. Data Deletion</h2>
-        <p>You can request deletion of your account and all associated data by contacting us at <a href="mailto:hello@momosense.com" className="text-primary hover:underline">hello@momosense.com</a>.</p>
+        <p>You can request deletion of your account and all associated data by contacting us at <a href="mailto:hello@senteinsights.com" className="text-primary hover:underline">hello@senteinsights.com</a>.</p>
 
         <h2 className="text-lg font-heading font-semibold text-foreground">6. Contact</h2>
-        <p>For privacy-related questions, email <a href="mailto:hello@momosense.com" className="text-primary hover:underline">hello@momosense.com</a>.</p>
+        <p>For privacy-related questions, email <a href="mailto:hello@senteinsights.com" className="text-primary hover:underline">hello@senteinsights.com</a>.</p>
       </motion.div>
     </section>
     <Footer />

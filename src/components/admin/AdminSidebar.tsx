@@ -26,7 +26,7 @@ const AdminSidebar = ({ activePage, onNavigate, pendingCount, onLogout }: AdminS
   const sidebar = (
     <div className="flex flex-col h-full w-64 bg-[#1B3A6B] text-white">
       <div className="p-5 border-b border-white/10">
-        <h2 className="font-heading font-bold text-lg tracking-tight">MoMoSense Admin</h2>
+        <h2 className="font-heading font-bold text-lg tracking-tight">SenteInsights Admin</h2>
       </div>
       <nav className="flex-1 py-4 space-y-1 px-3">
         {NAV_ITEMS.map((item) => {

@@ -22,7 +22,7 @@ const Footer = () => (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Scale className="h-5 w-5 text-primary" />
-            <span className="font-heading font-bold text-foreground">MoMoSense</span>
+            <span className="font-heading font-bold text-foreground">SenteInsights</span>
           </div>
           <p className="text-xs text-muted leading-relaxed">
             AI-powered mobile money statement analysis. Upload, analyse, and understand your finances.
@@ -57,17 +57,17 @@ const Footer = () => (
         <div>
           <h4 className="text-sm font-semibold text-foreground mb-3">Contact</h4>
           <a
-            href="mailto:support@momosense.app"
+            href="mailto:support@senteinsights.app"
             className="flex items-center gap-1.5 text-xs text-muted hover:text-foreground transition-colors"
           >
             <Mail className="w-3.5 h-3.5" />
-            support@momosense.app
+            support@senteinsights.app
           </a>
         </div>
       </div>
 
       <div className="border-t border-border pt-4 text-center">
-        <p className="text-xs text-muted">© {new Date().getFullYear()} MoMoSense. All rights reserved.</p>
+        <p className="text-xs text-muted">© {new Date().getFullYear()} SenteInsights. All rights reserved.</p>
       </div>
     </div>
   </footer>

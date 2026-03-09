@@ -22,7 +22,7 @@ const ApiUsage = () => (
         className="space-y-6 text-muted leading-relaxed"
       >
         <p>
-          The MoMoSense API allows Business and Enterprise plan subscribers to programmatically
+          The SenteInsights API allows Business and Enterprise plan subscribers to programmatically
           access statement parsing and financial insights.
         </p>
 
@@ -45,7 +45,7 @@ const ApiUsage = () => (
           <p className="text-sm">
             API access is currently in development. Business and Enterprise plan holders will
             receive early access. Interested?{" "}
-            <a href="mailto:hello@momosense.com" className="text-primary hover:underline">
+            <a href="mailto:hello@senteinsights.com" className="text-primary hover:underline">
               Contact us
             </a>{" "}
             to join the waitlist.

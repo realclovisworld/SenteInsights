@@ -23,10 +23,10 @@ const Terms = () => (
         <p><strong className="text-foreground">Last updated:</strong> March 2026</p>
 
         <h2 className="text-lg font-heading font-semibold text-foreground">1. Acceptance</h2>
-        <p>By using MoMoSense, you agree to these terms. If you do not agree, please do not use the service.</p>
+        <p>By using SenteInsights, you agree to these terms. If you do not agree, please do not use the service.</p>
 
         <h2 className="text-lg font-heading font-semibold text-foreground">2. Service Description</h2>
-        <p>MoMoSense converts Mobile Money PDF statements into structured data, dashboards, and insights. The service is provided "as-is" and results depend on the quality of your PDF input.</p>
+        <p>SenteInsights converts Mobile Money PDF statements into structured data, dashboards, and insights. The service is provided "as-is" and results depend on the quality of your PDF input.</p>
 
         <h2 className="text-lg font-heading font-semibold text-foreground">3. Accounts & Plans</h2>
         <p>Free accounts have daily page limits. Paid plans are activated after manual payment verification and last 30 days from activation. Payments are non-refundable once a plan is activated.</p>
@@ -35,13 +35,13 @@ const Terms = () => (
         <p>You may only upload statements that belong to you or that you have authorisation to access. Automated scraping or abuse of the service is prohibited.</p>
 
         <h2 className="text-lg font-heading font-semibold text-foreground">5. Limitation of Liability</h2>
-        <p>MoMoSense is not a financial advisor. Insights and data are for informational purposes only. We are not liable for decisions made based on the data provided.</p>
+        <p>SenteInsights is not a financial advisor. Insights and data are for informational purposes only. We are not liable for decisions made based on the data provided.</p>
 
         <h2 className="text-lg font-heading font-semibold text-foreground">6. Changes</h2>
         <p>We may update these terms at any time. Continued use after changes constitutes acceptance.</p>
 
         <h2 className="text-lg font-heading font-semibold text-foreground">7. Contact</h2>
-        <p>Questions? Email <a href="mailto:hello@momosense.com" className="text-primary hover:underline">hello@momosense.com</a>.</p>
+        <p>Questions? Email <a href="mailto:hello@senteinsights.com" className="text-primary hover:underline">hello@senteinsights.com</a>.</p>
       </motion.div>
     </section>
     <Footer />

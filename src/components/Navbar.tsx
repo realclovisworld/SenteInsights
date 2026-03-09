@@ -26,7 +26,7 @@ const Navbar = () => {
         <div className="container mx-auto flex items-center justify-between h-16 px-4">
           <Link to="/" className="flex items-center gap-2">
             <Scale className="h-6 w-6 text-primary" />
-            <span className="font-heading font-bold text-xl text-foreground">MoMoSense</span>
+            <span className="font-heading font-bold text-xl text-foreground">SenteInsights</span>
           </Link>
 
           {/* Desktop nav */}
