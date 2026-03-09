@@ -13,6 +13,7 @@ import About from "./pages/About";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import ApiUsage from "./pages/ApiUsage";
+import FAQ from "./pages/FAQ";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
@@ -78,6 +79,7 @@ const App = () => (
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/api-usage" element={<ApiUsage />} />
+            <Route path="/faq" element={<FAQ />} />
             <Route path="/login/*" element={<Login />} />
             <Route path="/register/*" element={<Register />} />
             <Route path="*" element={<NotFound />} />
