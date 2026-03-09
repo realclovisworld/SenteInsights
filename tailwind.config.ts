@@ -14,9 +14,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        heading: ["Sora", "sans-serif"],
-        body: ["Sora", "sans-serif"],
-        mono: ["IBM Plex Mono", "monospace"],
+        heading: ["-apple-system", "SF Pro Display", "BlinkMacSystemFont", "Helvetica Neue", "Arial", "sans-serif"],
+        body:    ["-apple-system", "SF Pro Text",    "BlinkMacSystemFont", "Helvetica Neue", "Arial", "sans-serif"],
+        mono:    ["-apple-system", "SF Pro Text",    "BlinkMacSystemFont", "ui-monospace", "monospace"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -73,10 +73,10 @@ export default {
         },
       },
       borderRadius: {
-        "2xl": "1rem",
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        lg:   "var(--radius-lg)",
+        md:   "var(--radius-md)",
+        sm:   "var(--radius-sm)",
+        DEFAULT: "var(--radius-md)",
       },
       boxShadow: {
         card: "0 2px 16px rgba(0, 0, 0, 0.06)",
@@ -91,14 +91,24 @@ export default {
           to: { height: "0" },
         },
         "fade-in-up": {
-          from: { opacity: "0", transform: "translateY(20px)" },
-          to: { opacity: "1", transform: "translateY(0)" },
+          from: { opacity: "0", transform: "translateY(16px)" },
+          to:   { opacity: "1", transform: "translateY(0)" },
+        },
+        "fade-in": {
+          from: { opacity: "0" },
+          to:   { opacity: "1" },
+        },
+        "slide-down": {
+          from: { opacity: "0", transform: "translateY(-8px)" },
+          to:   { opacity: "1", transform: "translateY(0)" },
         },
       },
       animation: {
-        "accordion-down": "accordion-down 0.2s ease-out",
-        "accordion-up": "accordion-up 0.2s ease-out",
-        "fade-in-up": "fade-in-up 0.6s ease-out forwards",
+        "accordion-down": "accordion-down 0.22s cubic-bezier(0.4,0,0.2,1)",
+        "accordion-up":   "accordion-up   0.22s cubic-bezier(0.4,0,0.2,1)",
+        "fade-in-up":     "fade-in-up 0.52s cubic-bezier(0.4,0,0.2,1) forwards",
+        "fade-in":        "fade-in    0.40s cubic-bezier(0.4,0,0.2,1) forwards",
+        "slide-down":     "slide-down 0.26s cubic-bezier(0.4,0,0.2,1)",
       },
     },
   },

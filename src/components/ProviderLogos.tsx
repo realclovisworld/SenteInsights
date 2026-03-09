@@ -9,21 +9,22 @@ const providers = [
 
 const ProviderLogos = () => {
   return (
-    <section className="container mx-auto px-4 py-12">
+    <section className="container mx-auto px-5 py-10">
       <motion.div
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         viewport={{ once: true }}
+        transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
         className="text-center"
       >
-        <p className="text-sm font-medium text-muted mb-6">Supports statements from</p>
-        <div className="flex flex-wrap justify-center gap-6 items-center">
+        <p className="text-xs font-semibold text-muted tracking-wide uppercase mb-6">Supports statements from</p>
+        <div className="flex flex-wrap gap-4 items-center justify-center">
           {providers.map((p) => (
             <div
               key={p.name}
-              className={`${p.bg} px-5 py-3 rounded-xl shadow-sm border border-border`}
+              className={`${p.bg} px-6 py-3 rounded-xl border border-blue-200 shadow-sm hover:shadow-md transition-shadow`}
             >
-              <img src={p.logo} alt={p.name} className="h-8 w-auto" />
+              <img src={p.logo} alt={p.name} className="h-7 w-auto" />
             </div>
           ))}
         </div>

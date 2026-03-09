@@ -3,7 +3,7 @@ import HeroSection from "@/components/HeroSection";
 import ProviderLogos from "@/components/ProviderLogos";
 import FeaturesSection from "@/components/FeaturesSection";
 import PrivacyBanner from "@/components/PrivacyBanner";
-import HowItWorks from "@/components/HowItWorks";
+import ComprehensiveFAQ from "@/components/ComprehensiveFAQ";
 import Footer from "@/components/Footer";
 
 const Index = () => {
@@ -14,7 +14,7 @@ const Index = () => {
       <ProviderLogos />
       <FeaturesSection />
       <PrivacyBanner />
-      <HowItWorks />
+      <ComprehensiveFAQ />
       <Footer />
     </div>
   );
