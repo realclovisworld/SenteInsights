@@ -11,7 +11,7 @@ const Navbar = () => {
   const { isSignedIn } = useAuth();
 
   const navLinks = [
-    ...(isLanding ? [{ href: "#faq", label: "FAQ", isAnchor: true }] : []),
+    { href: "/faq", label: "FAQ", isAnchor: false },
     { href: "/pricing", label: "Pricing", isAnchor: false },
     { href: "/about", label: "About", isAnchor: false },
   ];
