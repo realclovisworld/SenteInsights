@@ -643,7 +643,7 @@ You're free to:
 
 <div align="center">
 
-**Built with ❤️ by [Clovis](https://github.com/realclovisworld)**
+**Built with ❤️ by [Clovis](https://github.com/realclovisworld) and [Gideon] (https://github.com/gideon-tech)**
 
 ### Get in Touch
 
@@ -652,6 +652,8 @@ You're free to:
 | **GitHub** | [@realclovisworld](https://github.com/realclovisworld) |
 | **Email** | clovis@senteinsights.com |
 | **Twitter** | [@realclovisworld](https://twitter.com/realclovisworld) |
+| **Twitter** | [@gideon_tech1](https://twitter.com/gideon_tech1) |
+
 | **Website** | [senteinsights.com](#) |
 
 ### Support the Project
